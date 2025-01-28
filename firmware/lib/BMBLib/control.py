@@ -31,7 +31,7 @@ class BasicControl:
     def set_proportional_gain(self, Kp):
         self.Kp = Kp
         
-    def set_integrator(self, Ki, Ilimit):
+    def set_integrator_gain(self, Ki, Ilimit):
         self.Ki = Ki
         self.Ilimit = Ilimit
         self.Ipos = 0
