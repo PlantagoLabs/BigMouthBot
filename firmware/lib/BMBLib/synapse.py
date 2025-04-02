@@ -12,7 +12,6 @@ def publish(topic, message, source = None):
         return
 
     for sub in subs:
-        print("sent to sub")
         sub(topic, message, source)
 
 async def _survey_task(topic, msg_function, period_ms, source):

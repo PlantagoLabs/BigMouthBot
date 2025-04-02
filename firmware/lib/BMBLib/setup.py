@@ -1,5 +1,7 @@
 import json
 
+from machine import I2C, Pin
+
 from BMBLib.encoder import Encoder
 from BMBLib.motor import Motor
 from BMBLib.control import BasicControl
@@ -7,6 +9,14 @@ from BMBLib.control import BasicControl
 from BMBLib.internals import BatteryMonitor
 
 from BMBLib import synapse
+
+from BMBLib.servo import Servo
+
+from async_buzzer import AsyncI2CBuzzer
+
+from LSM6DSO import LSM6DSO
+
+i2c = I2C(1, scl=Pin(19), sda= Pin(18), freq=1_000_000)
 
 battery = BatteryMonitor()
 
@@ -21,12 +31,19 @@ r_motor = Motor(14, 15, motor_model=motor_models['motor_models']['right'],  volt
 
 l_controller = BasicControl(l_encoder.get_wheel_speed, l_motor.set_speed)
 l_controller.force_command(0)
-l_controller.set_proportional_gain(motor_models['control_gains']['mid']['Kp'])
-l_controller.set_integrator_gain(motor_models['control_gains']['mid']['Ki'], 12.)
+l_controller.set_proportional_gain(motor_models['control_gains']['Kp'])
+l_controller.set_integrator_gain(motor_models['control_gains']['Ki'], 12.)
 
 r_controller = BasicControl(r_encoder.get_wheel_speed, r_motor.set_speed)
 r_controller.force_command(0)
-r_controller.set_proportional_gain(motor_models['control_gains']['mid']['Kp'])
-r_controller.set_integrator_gain(motor_models['control_gains']['mid']['Ki'], 12.)
+r_controller.set_proportional_gain(motor_models['control_gains']['Kp'])
+r_controller.set_integrator_gain(motor_models['control_gains']['Ki'], 12.)
+
+imu = LSM6DSO(i2c)
+
+buzzer = AsyncI2CBuzzer(i2c)
 
 synapse.survey("v_batt", battery.get_battery_voltage, 1000, "bmb")
+synapse.survey("imu", imu.get_dict, 100, "bmb")
+
+servo_1 = Servo.get_default_servo(1)
