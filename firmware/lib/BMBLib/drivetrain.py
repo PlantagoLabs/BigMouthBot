@@ -6,16 +6,14 @@ from BMBLib import synapse
 
 class Drivetrain():
     def __init__(self, motor_models, voltage_func=None):
-        self.wheel_circumference = 50
-        self.wheel_distance = 130
+        self.wheel_circumference = 2*3.1415*30
+        self.wheel_distance = 154
 
         self.l_encoder = Encoder(0, 4, 5, flip_dir=True)
         self.l_motor = Motor(6, 7, flip_dir=True, motor_model=motor_models['motor_models']['left'], voltage_func=voltage_func)
-        self.previous_l_encoder_value = 0.0
 
         self.r_encoder = Encoder(1, 12, 13)
         self.r_motor = Motor(14, 15, motor_model=motor_models['motor_models']['right'],  voltage_func=voltage_func)
-        self.previous_r_encoder_value = 0.0
 
         self.l_controller = BasicControl(self.l_encoder.get_wheel_speed, self.l_motor.set_speed)
         self.l_controller.force_command(0)
@@ -27,15 +25,31 @@ class Drivetrain():
         self.r_controller.set_proportional_gain(motor_models['control_gains']['Kp'])
         self.r_controller.set_integrator_gain(motor_models['control_gains']['Ki'], 12.)
 
-    def set_velocity(self, forward_speed, rotation_speed):
-        pass
+        synapse.subscribe('drivetrain.stop', self._act_stop_message)
+        synapse.subscribe('drivetrain.set_velocity', self._act_velocity_message)
+        synapse.survey("encoder", self.get_motion_data, 100, "drivetrain")
 
-    def get_encoder_data():
-        pass
+    def set_velocity(self, forward_speed, yaw_rate):
+        w_r = (forward_speed + yaw_rate*self.wheel_distance)/self.wheel_circumference
+        w_l = (forward_speed - yaw_rate*self.wheel_distance)/self.wheel_circumference
+
+        self.r_controller.set_target(w_r)
+        self.l_controller.set_target(w_l)
+
+    def stop(self):
+        self.r_controller.force_command(0)
+        self.l_controller.force_command(0)
+
+    def get_motion_data(self):
+        l_encoder = self.l_encoder.get_wheel_position()
+        r_encoder = self.r_encoder.get_wheel_position()
+        encoder_data = {'forward': self.wheel_circumference*(l_encoder + r_encoder)/2,
+                        'heading': 2*self.wheel_circumference*(r_encoder - l_encoder)/self.wheel_distance}
+        return encoder_data
 
     def _act_stop_message(self, topic, message, source):
-        pass
+        self.stop()
 
     def _act_velocity_message(self, topic, message, source):
-        pass
+        self.set_velocity(message['forward_speed'], message['yaw_rate'])
 

@@ -1,6 +1,7 @@
 import network
 import asyncio
 import json
+from BMBLib import profiler
 
 class BMBLink():
     def __init__(self):
@@ -9,6 +10,7 @@ class BMBLink():
         self._latest_id = 0
         self._links = {}
 
+    @profiler.profile("bmbnet.send")
     async def send_message(self, message):
         for link in self._links:
             self._links[link][1].write(message)

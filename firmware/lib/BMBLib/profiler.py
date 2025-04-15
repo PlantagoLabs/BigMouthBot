@@ -1,14 +1,11 @@
 import machine
 import time
 
-profiler_data = {}
-
-def register_tags(tags):
-    global profiler_data
-    for tag in tags:
-        profiler_data.setdefault(tag, {'calls': 0, 'time': 0.0})
+profiler_data = {'profiles': {}, 'start_time': time.time()}
 
 def profile(tag):
+    global profiler_data
+    profiler_data['profiles'].setdefault(tag, {'calls': 0, 'time': 0.0})
     def decorator(func):
         def wrapper(*args, **kwargs):
             global profiler_data
@@ -17,7 +14,7 @@ def profile(tag):
             
             returned_value = func(*args, **kwargs)
             
-            tag_data = profiler_data.get(tag)
+            tag_data = profiler_data['profiles'].get(tag)
             if tag_data:
                 tag_data['calls'] += 1
                 tag_data['time'] += time.ticks_diff(time.ticks_us(), t0)/1e6
@@ -28,4 +25,5 @@ def profile(tag):
     return decorator
 
 def get_profiler_data():
+    profiler_data['runtime'] = time.time() - profiler_data['start_time']
     return profiler_data
