@@ -22,3 +22,5 @@ async def _survey_task(topic, msg_function, period_ms, source):
 def survey(topic, msg_function, period_ms, source = None):
     asyncio.create_task(_survey_task(topic, msg_function, period_ms, source))
 
+def apply(topic, act_function):
+    subscribe(topic, lambda x, y, z: act_function(y) if y is not None else act_function())

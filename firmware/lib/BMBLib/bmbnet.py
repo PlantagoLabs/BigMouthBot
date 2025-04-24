@@ -2,6 +2,7 @@ import network
 import asyncio
 import json
 from BMBLib import profiler
+from BMBLib import synapse
 
 class BMBLink():
     def __init__(self):
@@ -12,12 +13,16 @@ class BMBLink():
 
     @profiler.profile("bmbnet.send")
     async def send_message(self, message):
-        for link in self._links:
-            self._links[link][1].write(message)
-            await self._links[link][1].drain()
+        for client_id in self._links:
+            try:
+                self._links[client_id][1].write(message)
+                await self._links[client_id][1].drain()
+            except:
+                print(f'connection reset from {client_id}')
+                self._remove_client(client_id)
+                
 
     def send_synaptic_mssage(self, topic, message, source):
-        print(topic)
         full_msg = {'topic': topic, 'message': message, 'source': source}
         json_msg = (json.dumps(full_msg)+'\n').encode()
         asyncio.create_task(self.send_message(json_msg))
@@ -33,14 +38,34 @@ class BMBLink():
 
     async def read_from_connection(self, client_id, reader):
         while 1:
-            line = await reader.readline()
+            try:
+                line = await reader.readline()
+            except:
+                print(f'connection reset from {client_id}')
+                self._remove_client(client_id)
+                break
+
             print(line)
             if not line:
                 self._remove_client(client_id)
                 break
+
+            try:
+                data = json.loads(line.decode())
+                if 'topic' not in data or 'message' not in data:
+                    continue
+                if 'source' not in data:
+                    data['source'] = None
+            except:
+                print(line)
+                continue
+
+            synapse.publish(data['topic'], data['message'], data['source'])
+                
             
     def _remove_client(self, client_id):
-        client = self._links.pop(client_id)
-        client[0].close()
-        client[1].close()
+        if client_id in self._links:
+            client = self._links.pop(client_id)
+            client[0].close()
+            client[1].close()
         print(len(self._links))
