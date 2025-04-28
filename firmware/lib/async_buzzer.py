@@ -3,11 +3,9 @@
 Some functions use a default volume that can be changed using the global variable DEFAULT_VOLUME
 """
 
-import machine
-import time
-import uasyncio
+import asyncio
 
-DEFAULT_VOLUME = 3
+DEFAULT_VOLUME = 4
 
 class AsyncI2CBuzzer:
     """Reads a playlist of notes and plays them timely on Sparkfun's Qwiic Buzzer using asyncio
@@ -32,7 +30,6 @@ class AsyncI2CBuzzer:
         
     def __send_note(self, freq, volume, duration):
         msg = freq.to_bytes(2, 'big') + volume.to_bytes(1, 'big') + duration.to_bytes(2, 'big') + b'\x01'
-        t0 = time.ticks_us()
         self.i2c.writeto_mem(self.addr, 3, msg)
         
     async def __play_notes(self):
@@ -41,7 +38,7 @@ class AsyncI2CBuzzer:
             # send note but only for 99% of the duration, to avoid
             # a race condition between the buzzer's I2C and note playing
             self.__send_note(next_note[0], next_note[1], int(0.99*next_note[2]))
-            await uasyncio.sleep_ms(next_note[2])
+            await asyncio.sleep_ms(next_note[2])
 
         self.player_task = None
             
@@ -51,7 +48,7 @@ class AsyncI2CBuzzer:
         See class description for the definition on notes"""
         self.notes_to_play.extend(notes)
         if not self.player_task:
-            self.player_task = uasyncio.create_task(self.__play_notes())
+            self.player_task = asyncio.create_task(self.__play_notes())
         
     def replace(self, notes: list):
         """Stops what is currently playing and replaces it with the provided note list. 
@@ -60,7 +57,7 @@ class AsyncI2CBuzzer:
         self.notes_to_play = notes
         if self.player_task:
             self.player_task.cancel()
-        self.player_task = uasyncio.create_task(self.__play_notes())
+        self.player_task = asyncio.create_task(self.__play_notes())
         
     def is_playing(self):
         """Returns True if the playlist is still actively playing."""
@@ -381,6 +378,8 @@ def text_to_tunetalk_tabs(text, octave = 4):
             tabs += 'G'+octave+'- S: '
         elif symbol == 'z':
             tabs += 'G'+octave+' D'+octave+' S: ' 
+        else:
+            tabs += 'C2- S: ' 
             
     return tabs[:-1]
     

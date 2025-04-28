@@ -35,7 +35,7 @@ async def main():
     r_encoder = Encoder(1, 12, 13)
     r_motor = Motor(14, 15, voltage_func=battery.get_battery_voltage)
 
-    for vi in range(0, 45, 3):
+    for vi in range(0, 44, 2):
         voltage = vi/10.0
         r_motor.set_voltage(voltage)
         l_motor.set_voltage(voltage)
@@ -43,6 +43,7 @@ async def main():
         for it in range(20):
             l_speed = l_encoder.get_wheel_speed()
             r_speed = r_encoder.get_wheel_speed()
+            print(l_speed, r_speed)
             if l_speed > 0.6:
                 add_sample_to_motor_data(left_forward_motor_data, voltage, l_speed)
             if r_speed > 0.6:
@@ -55,6 +56,7 @@ async def main():
         for it in range(20):
             l_speed = l_encoder.get_wheel_speed()
             r_speed = r_encoder.get_wheel_speed()
+            print(l_speed, r_speed)
             if l_speed < -0.6:
                 add_sample_to_motor_data(left_backward_motor_data, -voltage, l_speed)
             if r_speed < -0.6:
@@ -66,12 +68,20 @@ async def main():
 
     await uasyncio.sleep(1)
 
-    motor_models = {'left': [compute_motor_model(left_backward_motor_data), compute_motor_model(left_forward_motor_data)],
+    with open('motor_model.json', 'r') as fid:
+        motor_models = json.load(fid)
+
+    print(left_backward_motor_data)
+    print(left_forward_motor_data)
+    print(right_backward_motor_data)
+    print(right_forward_motor_data)
+
+    motor_models['motor_models'] = {'left': [compute_motor_model(left_backward_motor_data), compute_motor_model(left_forward_motor_data)],
                     'right': [compute_motor_model(right_backward_motor_data), compute_motor_model(right_forward_motor_data)]}
+    
+    print(motor_models)
 
     with open('motor_model.json', 'w') as fid:
         json.dump(motor_models, fid)
-
-    print(motor_models)
 
 uasyncio.run(main())

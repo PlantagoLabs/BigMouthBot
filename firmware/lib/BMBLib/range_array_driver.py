@@ -54,10 +54,18 @@ class RangeArrayDriver:
                 distance_array = []
                 for k in range(8):
                     array_line = []
-                    for n in range(4):
-                        array_line.append(distance[3 - n + 56 - 8*k])
-                    for n in range(4):
-                        array_line.append(distance[7 - n + 56 - 8*k])
+                    array_line.append(distance[3 + 56 - 8*k])
+                    array_line.append(distance[2 + 56 - 8*k])
+                    array_line.append(distance[1 + 56 - 8*k])
+                    array_line.append(distance[0 + 56 - 8*k])
+                    array_line.append(distance[7 + 56 - 8*k])
+                    array_line.append(distance[6 + 56 - 8*k])
+                    array_line.append(distance[5 + 56 - 8*k])
+                    array_line.append(distance[4 + 56 - 8*k])
+                    # for n in range(4):
+                        # array_line.append(distance[3 - n + 56 - 8*k])
+                    # for n in range(4):
+                        # array_line.append(distance[7 - n + 56 - 8*k])
                     distance_array.append(array_line)
 
                 synapse.publish('range_array', distance_array, 'range_array')

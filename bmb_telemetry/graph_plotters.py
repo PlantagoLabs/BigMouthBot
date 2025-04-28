@@ -67,7 +67,6 @@ class TimelinePlotter(AbstractFigurePlotter):
         self.fig.canvas.flush_events() 
         self.canvas.draw()
 
-
     def add_data(self, sample, timestamp, label):
         data = self.data.setdefault(label, {'samples': [], 'timestamps': []})
         data['samples'].append(sample)
@@ -75,6 +74,33 @@ class TimelinePlotter(AbstractFigurePlotter):
         if len(data['samples']) > self.max_num_samples:
             data['samples'].pop(0)
             data['timestamps'].pop(0)
+
+class TrajectoryPlotter(AbstractFigurePlotter):
+    def __init__(self, tk_master):
+        AbstractFigurePlotter.__init__(self, tk_master, 6, 6)
+        self.subplt.grid(linestyle=':')
+        self.data = {'x': [], 'y': []}
+
+    def draw(self):
+        if not self.data['x']:
+            return
+        if 'plot' not in self.data:
+            self.data['plot'], = self.subplt.plot(self.data['x'], self.data['y'])
+            self.subplt.set_aspect('equal', adjustable='box')
+        else:
+            self.data['plot'].set_xdata(self.data['x'])
+            self.data['plot'].set_ydata(self.data['y'])
+            self.subplt.set_xlim(np.min(self.data['x']), np.max(self.data['x']))
+            self.subplt.set_ylim(np.min(self.data['y']), np.max(self.data['y']))
+        
+        self.fig.canvas.draw()
+        self.fig.canvas.flush_events() 
+        self.canvas.draw()
+
+
+    def add_data(self, position):
+        self.data['x'].append(position['x'])
+        self.data['y'].append(position['y'])
 
 class StackedLinePlotter(AbstractFigurePlotter):
     def __init__(self, tk_master, max_num_samples = 60., y_lim = None, y_label=None):

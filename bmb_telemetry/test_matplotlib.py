@@ -8,11 +8,9 @@ from matplotlib.backend_bases import key_press_handler
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
+from bmb_link_client import BMBLinkClient
+
 import numpy as np
-import threading
-from queue import Queue
-import asyncio
-import json
 import time
 
 from graph_plotters import *
@@ -24,48 +22,7 @@ app_running = True
 ip = '192.168.68.111'
 port = 2132
 
-class ThreadedBMBClient:
-    def __init__(self, ip, port):
-        self.running = False
-        self.incoming_queue = Queue()
-        self.outgoing_queue = Queue()
-        self.ip = ip
-        self.port = port
-        self.connection = threading.Thread(target=self._run_connection).start()
-
-    def _run_connection(self):
-        asyncio.run(self.connect())
-
-    async def connect(self):
-        self.running = True
-        self.reader, self.writer = await asyncio.open_connection(self.ip, self.port)
-        self.receiver_task = asyncio.create_task(self._receive_data())
-        self.send_task = asyncio.create_task(self._send_data())
-        while self.running:
-            await asyncio.sleep(0.01)
-        self.receiver_task.cancel()
-        self.send_task.cancel()
-
-    async def _receive_data(self):
-        while self.running:
-            line = await self.reader.readline()
-            try:
-                data = json.loads(line)
-                data['timestamp'] = time.time()
-                self.incoming_queue.put(data)
-            except:
-                print(line)
-
-    async def _send_data(self):
-        while self.running:
-            while not self.outgoing_queue.empty():
-                message = self.outgoing_queue.get()
-                json_msg = (json.dumps(message)+'\n').encode()
-                self.writer.write(json_msg)
-                await self.writer.drain()
-            await asyncio.sleep(0.01)
-
-bmbclient = ThreadedBMBClient(ip, port)
+bmbclient = BMBLinkClient(ip, port, record=True)
 
 # async def run_tcp_client(msg_queue):
 #     global app_running
@@ -114,12 +71,27 @@ storage_timeline.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expan
 storage_timeline.draw()
 
 imu_frame = tkinter.Frame(root)
-acc_timeline = TimelinePlotter(imu_frame, y_label='Acceleration [?]')
+acc_timeline = TimelinePlotter(imu_frame, max_num_samples = 300, y_label='Acceleration [?]')
 acc_timeline.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
 acc_timeline.draw()
-gyro_timeline = TimelinePlotter(imu_frame, y_label='Rotation Speed [?]')
+gyro_timeline = TimelinePlotter(imu_frame, max_num_samples = 300, y_label='Rotation Speed [?]')
 gyro_timeline.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
 gyro_timeline.draw()
+
+encoder_frame = tkinter.Frame(root)
+encoder_timeline = TimelinePlotter(encoder_frame, max_num_samples = 300, y_label='Encoder Speed [?]')
+encoder_timeline.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+encoder_timeline.draw()
+control_timeline = TimelinePlotter(encoder_frame, max_num_samples = 300, y_label='Control Values [?]')
+control_timeline.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+control_timeline.draw()
+# gyro_timeline = TimelinePlotter(imu_frame, max_num_samples = 300, y_label='Rotation Speed [?]')
+# gyro_timeline.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+# gyro_timeline.draw()
+
+# trajectory_plotter = TrajectoryPlotter(root)
+# trajectory_plotter.get_tk_widget().grid(row=1, column=0) 
+# trajectory_plotter.draw()
 
 range_array_img = GridPlotter(root, c_lim=[0, 500])
 range_array_img.get_tk_widget().grid(row=0, column=1)#pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
@@ -140,20 +112,45 @@ servo_spinbox.pack(side=tkinter.TOP)
 
 sensor_frame.grid(row=0, column=0)
 memory_frame.grid(row=1, column=2)
-imu_frame.grid(row=1, column=0) 
+# imu_frame.grid(row=1, column=0) 
+encoder_frame.grid(row=1, column=0)
 actuator_frame.grid(row=0, column=2)
 
-# def on_key_press(event):
-#     global phi
-#     print("you pressed {}".format(event.key))
-#     key_press_handler(event, canvas, toolbar)
-#     phi += 0.1
-#     t = np.arange(0, 3, .01)
-#     subplt.cla()
-#     subplt.plot(t, 2 * np.sin(2 * np.pi * t + phi))
-#     canvas.draw()
+motion_speeds = {'forward_speed': 0, 'yaw_rate': 0}
 
-# canvas.mpl_connect("key_press_event", on_key_press)
+def send_motion_message():
+    bmbclient.outgoing_queue.put({'topic': 'drivetrain.set_velocity', 
+                                  'message': motion_speeds, 
+                                  'source': 'telemetry'})
+    
+def send_stop_message():
+    bmbclient.outgoing_queue.put({'topic': 'drivetrain.stop', 
+                                  'message': None, 
+                                  'source': 'telemetry'})
+
+def on_key_press(event):
+    global motion_speeds
+    print(event.keysym)
+    if event.keysym == 'Up':
+        motion_speeds['forward_speed'] += 25
+    if event.keysym == 'Down':
+        motion_speeds['forward_speed'] -= 25
+    if event.keysym == 'Left':
+        motion_speeds['yaw_rate'] += 0.3
+    if event.keysym == 'Right':
+        motion_speeds['yaw_rate'] -= 0.3
+    if event.keysym == 'space':
+        motion_speeds = {'forward_speed': 0, 'yaw_rate': 0}
+    send_motion_message()
+
+    bmbclient.outgoing_queue.put({'topic': 'tunetalk', 
+                                  'message': event.keysym, 
+                                  'source': 'telemetry'})
+
+    if event.keysym == 'space':
+        send_stop_message()
+
+root.bind("<KeyPress>", on_key_press)
 
 
 # def _quit():
@@ -197,12 +194,32 @@ def redraw_plot():
             ram_timeline.add_data(list(data['message']['ram'].values()), data['timestamp'], list(data['message']['ram'].keys()))
             storage_timeline.add_data(list(data['message']['storage'].values()), data['timestamp'], list(data['message']['storage'].keys()))
         elif data['topic'] == 'imu':
-            acc_timeline.add_data(data['message']['acc'][0], data['timestamp'], 'x')
-            acc_timeline.add_data(data['message']['acc'][1], data['timestamp'], 'y')
-            acc_timeline.add_data(data['message']['acc'][2], data['timestamp'], 'z')
-            gyro_timeline.add_data(data['message']['gyro'][0], data['timestamp'], 'x')
-            gyro_timeline.add_data(data['message']['gyro'][1], data['timestamp'], 'y')
-            gyro_timeline.add_data(data['message']['gyro'][2], data['timestamp'], 'z')
+            pass
+        #     acc_timeline.add_data(data['message']['acc'][0], data['timestamp'], 'x')
+        #     acc_timeline.add_data(data['message']['acc'][1], data['timestamp'], 'y')
+        #     acc_timeline.add_data(data['message']['acc'][2], data['timestamp'], 'z')
+        #     gyro_timeline.add_data(data['message']['gyro'][0], data['timestamp'], 'x')
+        #     gyro_timeline.add_data(data['message']['gyro'][1], data['timestamp'], 'y')
+        #     gyro_timeline.add_data(data['message']['gyro'][2], data['timestamp'], 'z')
+        # elif data['topic'] == 'estimate.position':
+        #     trajectory_plotter.add_data(data['message'])
+        elif data['topic'] == 'encoder.speed':
+            encoder_timeline.add_data(data['message']['left'], data['timestamp'], data['topic']+".left")
+            encoder_timeline.add_data(data['message']['right'], data['timestamp'], data['topic']+".right")
+        elif data['topic'] == 'control':
+            print(data)
+            if data['message']['left']['target'] is not None and data['message']['right']['target'] is not None:
+                encoder_timeline.add_data(data['message']['left']['target'], data['timestamp'], data['topic']+".left")
+                encoder_timeline.add_data(data['message']['right']['target'], data['timestamp'], data['topic']+".right")
+            if data['message']['left']['target'] is not None and data['message']['right']['target'] is not None:
+                control_timeline.add_data(data['message']['left']['target'], data['timestamp'], "target.left")
+                control_timeline.add_data(data['message']['right']['target'], data['timestamp'], "target.right")
+
+            control_timeline.add_data(data['message']['left']['err'], data['timestamp'], "err.left")
+            control_timeline.add_data(data['message']['right']['err'], data['timestamp'], "err.right")
+            control_timeline.add_data(data['message']['left']['Ipos'], data['timestamp'], "Ipos.left")
+            control_timeline.add_data(data['message']['right']['Ipos'], data['timestamp'], "Ipos.right")
+                
         else:
             print(data)
 
@@ -210,8 +227,11 @@ def redraw_plot():
     v_batt_timeline.draw()
     reflect_timeline.draw()
     range_array_img.draw()
-    acc_timeline.draw()
-    gyro_timeline.draw()
+    encoder_timeline.draw()
+    control_timeline.draw()
+    # acc_timeline.draw()
+    # gyro_timeline.draw()
+    # trajectory_plotter.draw()
     cpu_usage_img.draw()
     ram_timeline.draw()
     storage_timeline.draw()

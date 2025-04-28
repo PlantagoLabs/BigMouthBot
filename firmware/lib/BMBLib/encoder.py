@@ -10,7 +10,7 @@ class Encoder:
     _counts_per_motor_shaft_revolution = 12
     resolution = _counts_per_motor_shaft_revolution * _gear_ratio # 585
     
-    def __init__(self, index, encAPin, encBPin, flip_dir=False, estimator_freq=50):
+    def __init__(self, index, encAPin, encBPin, flip_dir=False, estimator_freq=100):
         """
         Uses the on board PIO State Machine to keep track of encoder positions. 
         Only 4 encoders can be instantiated this way.
@@ -90,12 +90,9 @@ class Encoder:
         
     def _compute_speed(self):
         new_encoder_position = self.get_encoder_position()
-        self.encoder_speed = (self.encoder_speed + (new_encoder_position - self.previous_encoder_position)*self.estimator_freq)>>1
-        if self.encoder_speed == -1: # due to how python handles negative numbers
-            self.encoder_speed = 0
+        self.encoder_speed = (3*self.encoder_speed + (new_encoder_position - self.previous_encoder_position)*self.estimator_freq)/4.0
         self.previous_encoder_position = new_encoder_position
         
-
     @rp2.asm_pio(in_shiftdir=rp2.PIO.SHIFT_LEFT, out_shiftdir=rp2.PIO.SHIFT_RIGHT)
     def _encoder():
         # Register descriptions:

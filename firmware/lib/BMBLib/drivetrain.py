@@ -27,11 +27,14 @@ class Drivetrain():
 
         synapse.subscribe('drivetrain.stop', self._act_stop_message)
         synapse.subscribe('drivetrain.set_velocity', self._act_velocity_message)
-        synapse.survey("encoder", self.get_motion_data, 100, "drivetrain")
+        synapse.survey("encoder.motion", self.get_motion_data, 100, "drivetrain")
+        synapse.survey("encoder.speed", self.get_encoder_speeds, 100, "drivetrain")
+        synapse.survey("control", self.get_control_data, 100, "drivetrain")
 
     def set_velocity(self, forward_speed, yaw_rate):
-        w_r = (forward_speed + yaw_rate*self.wheel_distance)/self.wheel_circumference
-        w_l = (forward_speed - yaw_rate*self.wheel_distance)/self.wheel_circumference
+        w_r = (forward_speed + 0.5*yaw_rate*self.wheel_distance)/self.wheel_circumference
+        w_l = (forward_speed - 0.5*yaw_rate*self.wheel_distance)/self.wheel_circumference
+        print(forward_speed, w_r, w_l)
 
         self.r_controller.set_target(w_r)
         self.l_controller.set_target(w_l)
@@ -44,8 +47,23 @@ class Drivetrain():
         l_encoder = self.l_encoder.get_wheel_position()
         r_encoder = self.r_encoder.get_wheel_position()
         encoder_data = {'forward': self.wheel_circumference*(l_encoder + r_encoder)/2,
-                        'heading': 2*self.wheel_circumference*(r_encoder - l_encoder)/self.wheel_distance}
+                        'heading': self.wheel_circumference*(r_encoder - l_encoder)/self.wheel_distance}
         return encoder_data
+    
+    def get_encoder_speeds(self):
+        encoder_data = {'left': self.l_encoder.get_wheel_speed(), 'right': self.r_encoder.get_wheel_speed()}
+        return encoder_data
+    
+    def get_control_data(self):
+        control_data = {'left': {'err': self.l_controller.prev_error, 
+                                 'Ipos': self.l_controller.Ipos, 
+                                 'Ineg': self.l_controller.Ineg,
+                                 'target': self.l_controller.target}, 
+                        'right': {'err': self.r_controller.prev_error, 
+                                  'Ipos': self.r_controller.Ipos, 
+                                  'Ineg': self.r_controller.Ineg,
+                                 'target': self.r_controller.target}}
+        return control_data
 
     def _act_stop_message(self, topic, message, source):
         self.stop()

@@ -3,6 +3,7 @@
 # License: MIT
 # Author: shaoziyang (shaoziyang@micropython.org.cn)
 # v1.0 2019.7
+# Modified by PlantagoLabs
 
 LSM6DSO_CTRL1_XL = const(0x10)
 LSM6DSO_CTRL2_G = const(0x11)
@@ -35,17 +36,17 @@ class LSM6DSO():
         # ODR_XL=2 FS_XL=0
         self.setreg(LSM6DSO_CTRL1_XL, 0x20)
         # ODR_G=2 FS_125=0 -> 26Hz output, 250 dps scale
-        self.setreg(LSM6DSO_CTRL2_G, 0x20)        
+        self.setreg(LSM6DSO_CTRL2_G, 0x24)        
         # BDU=1 IF_INC=1
         self.setreg(LSM6DSO_CTRL3_C, 0x44)
         self.setreg(LSM6DSO_CTRL8_XL, 0)
         # scale=2G
         self._scale_a = 0
-        self._scale_g = 1
+        self._scale_g = 2
         self._scale_a_c = 1
-        self._scale_g_c = 1
+        self._scale_g_c = 2
         self.scale_a('2g')
-        self.scale_g('250')
+        self.scale_g('500')
 
     def int16(self, d):
         return d if d < 0x8000 else d - 0x10000
@@ -89,6 +90,9 @@ class LSM6DSO():
 
     def mdps(self, reg):
         return round(self.int16(self.get2reg(reg)) * 4.375 * self._scale_g_c) 
+    
+    def radps(self, reg):
+        return self.int16(self.get2reg(reg)) * 7.6356e-5 * self._scale_g_c
 
     def ax(self):
         return self.mg(LSM6DSO_OUTX_L_A)
@@ -100,13 +104,13 @@ class LSM6DSO():
         return self.mg(LSM6DSO_OUTZ_L_A)
 
     def gx(self):
-        return self.mdps(LSM6DSO_OUTX_L_G)
+        return self.radps(LSM6DSO_OUTX_L_G)
 
     def gy(self):
-        return self.mdps(LSM6DSO_OUTY_L_G)
+        return self.radps(LSM6DSO_OUTY_L_G)
 
     def gz(self):
-        return self.mdps(LSM6DSO_OUTZ_L_G)
+        return self.radps(LSM6DSO_OUTZ_L_G)
 
     def get_a(self):
         self.irq_v[0][0] = self.ax()
