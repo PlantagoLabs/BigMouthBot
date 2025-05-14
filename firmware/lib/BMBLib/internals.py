@@ -6,7 +6,7 @@ class BatteryMonitor:
     def __init__(self, period_ms = 5):
         self.period_ms = period_ms
         self.adc = ADC(28)
-        self.v_batt = 4
+        self.v_batt = 30000
         self.adc_to_voltage = 4.0303*3.3/65535.0
         self.sampler_task = uasyncio.create_task(self._battery_sampling())
         

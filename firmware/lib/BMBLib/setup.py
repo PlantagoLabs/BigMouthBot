@@ -1,10 +1,12 @@
 from machine import I2C, Pin
 
+i2c = I2C(1, scl=Pin(19), sda= Pin(18), freq=1_000_000)
+
+print(i2c.scan())
+
 def make_buzz(freq, volume, duration, i2c, addr=52):
     msg = freq.to_bytes(2, 'big') + volume.to_bytes(1, 'big') + duration.to_bytes(2, 'big') + b'\x01'
     i2c.writeto_mem(addr, 3, msg)
-
-i2c = I2C(1, scl=Pin(19), sda= Pin(18), freq=1_000_000)
 
 make_buzz(262, 4, 200, i2c)
 
@@ -56,7 +58,7 @@ except:
 make_buzz(349, 4, 200, i2c)
 time.sleep_ms(200)
     
-buzzer = AsyncI2CBuzzer(i2c)
+buzzer = AsyncI2CBuzzer(i2c, addr=52)
 
 servo_1 = Servo.get_default_servo(1)
 

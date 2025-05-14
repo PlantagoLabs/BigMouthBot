@@ -11,6 +11,7 @@ import numpy as np
 
 class AbstractFigurePlotter(ABC):
     def __init__(self, tk_master, w, h):
+        super().__init__()
         self.fig = Figure(figsize=(w, h), dpi=100)
         self.fig.subplots_adjust(bottom=0.2)
         self.subplt = self.fig.add_subplot(111)
@@ -147,7 +148,7 @@ class GridPlotter(AbstractFigurePlotter):
     def draw(self):
         if self.data:
             if 'img' not in self.data:
-                self.data['img'] = self.subplt.imshow(self.data['array'], cmap='viridis_r')
+                self.data['img'] = self.subplt.imshow(np.flip(self.data['array']), cmap='viridis_r')
                 if self.c_lim:
                     self.data['img'].set_clim(self.c_lim)
             else:

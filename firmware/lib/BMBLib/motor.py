@@ -52,19 +52,29 @@ class Motor:
         """
         self.set_effort (voltage/self.voltage_func())
         
-    def set_speed(self, speed: float):
+    def set_speed(self, speed: float, forward: bool = None):
         """
         Applies the right voltage on the motor to achieve some speed, based on the motor_model
         
         The target speed is achieved using open loop model.
         - speed: Float, the definition and units depend on the motor_model provided
         """
-        if speed < 0:
-            voltage = speed/self.motor_model[0][0] + self.motor_model[0][1]
-        elif speed > 0:
-            voltage = speed/self.motor_model[1][0] + self.motor_model[1][1]
-        else:
+        if forward is None:
+            if speed > 0.0:
+                forward = True
+            else:
+                forward = False
+
+        if speed == 0.0:
             voltage = 0
+        else:
+            if forward:
+                voltage = speed/self.motor_model[1][0] + self.motor_model[1][1]
+            else:
+                voltage = speed/self.motor_model[0][0] + self.motor_model[0][1]
+                
+
+                
             
         self.set_voltage(voltage)
 

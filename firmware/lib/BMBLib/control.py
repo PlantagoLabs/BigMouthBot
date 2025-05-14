@@ -70,12 +70,12 @@ class BasicControl:
                 self.Ineg = self._add_error_to_integrator(self.Ineg, err)
                 feedback += self.Ki*self.Ineg
 
-        if self.target >= 0 and self.target + feedback < 0:
-            feedback = -self.target
-        if self.target <= 0 and self.target + feedback > 0:
-            feedback = -self.target
+        # if self.target >= 0 and self.target + feedback < 0:
+        #     feedback = -self.target
+        # if self.target <= 0 and self.target + feedback > 0:
+        #     feedback = -self.target
                      
-        self.command_func(self.target + feedback)
+        self.command_func(self.target + feedback, self.target > 0.0)
 
         self.prev_error = err
         

@@ -91,6 +91,7 @@ class Encoder:
     def _compute_speed(self):
         new_encoder_position = self.get_encoder_position()
         self.encoder_speed = (3*self.encoder_speed + (new_encoder_position - self.previous_encoder_position)*self.estimator_freq)/4.0
+        # self.encoder_speed = (new_encoder_position - self.previous_encoder_position)*self.estimator_freq
         self.previous_encoder_position = new_encoder_position
         
     @rp2.asm_pio(in_shiftdir=rp2.PIO.SHIFT_LEFT, out_shiftdir=rp2.PIO.SHIFT_RIGHT)
