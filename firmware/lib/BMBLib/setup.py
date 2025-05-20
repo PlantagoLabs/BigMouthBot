@@ -35,6 +35,9 @@ from async_buzzer import AsyncI2CBuzzer, tabs_to_notes, text_to_tunetalk_tabs
 
 from LSM6DSO import LSM6DSO
 
+import network
+from BMBLib.bmbnet import BMBLink
+
 make_buzz(330, 4, 200, i2c)
 
 battery = BatteryMonitor()
@@ -43,6 +46,7 @@ with open('motor_model.json', 'r') as fid:
     motor_models = json.load(fid)
 
 drivetrain = Drivetrain(motor_models, battery.get_battery_voltage)
+
 try:
     imu = LSM6DSO(i2c)
 except:
@@ -96,3 +100,36 @@ synapse.apply("mouth.free", servo_1.free)
 synapse.apply("tunetalk", tunetalk)
 
 make_buzz(392, 4, 200, i2c)
+
+wlan = network.WLAN()
+wlan.active(True)
+
+with open('wifi_logins.json', 'r') as fid:
+    known_wifis = json.load(fid)
+
+wifi_points = wlan.scan()
+for point in wifi_points:
+    point_name = point[0].decode()
+    if point_name in known_wifis:
+        wlan.connect(point_name, known_wifis[point_name])
+        print(f'connecting to {point_name}')
+        break
+
+link_manager = BMBLink()
+initial_data = {'topic': 'welcome', 
+                'source': 'connection',
+                'message': "You are connected :)"}
+link_manager.on_connection_msg = json.dumps(initial_data) + '\n'
+
+synapse.subscribe("v_batt", link_manager.send_synaptic_mssage)
+synapse.subscribe("l_reflect", link_manager.send_synaptic_mssage)
+synapse.subscribe("r_reflect", link_manager.send_synaptic_mssage)
+synapse.subscribe("range_array", link_manager.send_synaptic_mssage)
+synapse.subscribe("cpu_profile", link_manager.send_synaptic_mssage)
+synapse.subscribe("memory", link_manager.send_synaptic_mssage)
+synapse.subscribe("imu", link_manager.send_synaptic_mssage)
+synapse.subscribe("estimate.position", link_manager.send_synaptic_mssage)
+synapse.subscribe("encoder.speed", link_manager.send_synaptic_mssage)
+synapse.subscribe("control", link_manager.send_synaptic_mssage)
+
+make_buzz(440, 4, 200, i2c)

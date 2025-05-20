@@ -1,33 +1,19 @@
-import network
+
 import asyncio
 import json
 from BMBLib import synapse
 from BMBLib.bmbnet import BMBLink
 from BMBLib import setup
 
-wlan = network.WLAN()
-wlan.active(True)
-
-with open('wifi_logins.json', 'r') as fid:
-    known_wifis = json.load(fid)
-
-wifi_points = wlan.scan()
-for point in wifi_points:
-    point_name = point[0].decode()
-    if point_name in known_wifis:
-        wlan.connect(point_name, known_wifis[point_name])
-        print(f'connecting to {point_name}')
-        break
-
-print(wlan.isconnected())
-ip = wlan.ifconfig()
-print(ip)
-print(wlan.status())
-# new_ip = ('192.168.221.123', ip[1], ip[2], ip[3])
-# print(new_ip)
-# wlan.ifconfig(new_ip)
-print(wlan.isconnected())
-print(wlan.status())
+# print(wlan.isconnected())
+# ip = wlan.ifconfig()
+# print(ip)
+# print(wlan.status())
+# # new_ip = ('192.168.221.123', ip[1], ip[2], ip[3])
+# # print(new_ip)
+# # wlan.ifconfig(new_ip)
+# print(wlan.isconnected())
+# print(wlan.status())
 
 link_manager = BMBLink()
 initial_data = {'topic': 'welcome', 

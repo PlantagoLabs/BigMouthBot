@@ -9,23 +9,32 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
 from bmb_link_client import BMBLinkClient
+from multiqueue import multiqueue
 
 import numpy as np
 import time
+
+from queue import Queue
 
 from graph_plotters import *
 
 from ui_block import UIGrid
 
+import telemind
+
 plt.style.use('dark_background')
 
 app_running = True
 
-# ip = '192.168.68.111'
-ip = '192.168.21.99'
+ip = '192.168.68.110'
+# ip = '192.168.21.110'
 port = 2132
 
-bmbclient = BMBLinkClient(ip, port, record=True)
+print('before bmb client')
+
+bmbclient = BMBLinkClient(ip, port, record=False)
+
+outgoing_queue, incoming_queue = multiqueue.get_queues()
 
 # async def run_tcp_client(msg_queue):
 #     global app_running
@@ -124,14 +133,14 @@ ui_grid = UIGrid(root, 3, ['imu','memory', 'bat_and_line', 'range_array', 'cpu']
 motion_speeds = {'forward_speed': 0, 'yaw_rate': 0}
 
 def send_motion_message():
-    bmbclient.outgoing_queue.put({'topic': 'drivetrain.set_velocity', 
-                                  'message': motion_speeds, 
-                                  'source': 'telemetry'})
+    outgoing_queue.put({'topic': 'drivetrain.set_velocity', 
+                        'message': motion_speeds, 
+                        'source': 'telemetry'})
     
 def send_stop_message():
-    bmbclient.outgoing_queue.put({'topic': 'drivetrain.stop', 
-                                  'message': None, 
-                                  'source': 'telemetry'})
+    outgoing_queue.put({'topic': 'drivetrain.stop', 
+                        'message': None, 
+                        'source': 'telemetry'})
 
 def on_key_press(event):
     global motion_speeds
@@ -148,9 +157,9 @@ def on_key_press(event):
         motion_speeds = {'forward_speed': 0, 'yaw_rate': 0}
     send_motion_message()
 
-    bmbclient.outgoing_queue.put({'topic': 'tunetalk', 
-                                  'message': event.keysym, 
-                                  'source': 'telemetry'})
+    outgoing_queue.put({'topic': 'tunetalk', 
+                        'message': event.keysym, 
+                        'source': 'telemetry'})
 
     if event.keysym == 'space':
         send_stop_message()
@@ -170,13 +179,14 @@ root.bind("<KeyPress>", on_key_press)
 phi = 0
 
 def redraw_plot():
-    global bmbclient
+    global incoming_queue
+    global outgoing_queue
     global ui_grid
 
     messages = []
     
-    while not bmbclient.incoming_queue.empty():
-        messages.append(bmbclient.incoming_queue.get())
+    while not incoming_queue.empty():
+        messages.append(incoming_queue.get())
 
     ui_grid.update_blocks_with_messages(messages)
 
