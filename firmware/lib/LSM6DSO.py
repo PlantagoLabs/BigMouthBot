@@ -60,7 +60,8 @@ class LSM6DSO():
         return self.rb[0]
 
     def get2reg(self, reg):
-        return self.getreg(reg) + self.getreg(reg+1) * 256
+        double_reg = self.i2c.readfrom_mem(self.addr, reg, 2)
+        return double_reg[0] + double_reg[1] * 256
 
     def r_w_reg(self, reg, dat, mask):
         self.getreg(reg)

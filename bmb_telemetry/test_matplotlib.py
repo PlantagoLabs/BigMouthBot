@@ -1,5 +1,6 @@
 import tkinter
-from abc import ABC, abstractmethod
+import sys
+import os
 
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
@@ -20,51 +21,65 @@ from graph_plotters import *
 
 from ui_block import UIGrid
 
-import telemind
+from telemind import TeleMind
 
 plt.style.use('dark_background')
 
 app_running = True
 
-ip = '192.168.68.110'
+ip = '192.168.68.107'
 # ip = '192.168.21.110'
+# ip = '192.168.231.99'
 port = 2132
 
 print('before bmb client')
 
-bmbclient = BMBLinkClient(ip, port, record=False)
+bmbclient = BMBLinkClient(ip, port, record=True)
+
+# telemind = TeleMind(main_task)
 
 outgoing_queue, incoming_queue = multiqueue.get_queues()
-
-# async def run_tcp_client(msg_queue):
-#     global app_running
-#     print('connecting to bmb')
-#     reader, writer = await asyncio.open_connection(
-#         '192.168.68.111', 2132)
-    
-#     print('connected to bmb')
-#     while app_running:
-#         line = await reader.readline()
-#         try:
-#             data = json.loads(line)
-#             data['timestamp'] = time.time()
-#             msg_queue.put(data)
-#         except:
-#             print(line)
-        
-    
-# def connect_to_bmb(msg_queue):
-#     asyncio.run(run_tcp_client(msg_queue))
-
-# msg_queue = Queue()
-
-# bmb_connection_thread = threading.Thread(target=connect_to_bmb, args=(msg_queue,)).start()
 
 root = tkinter.Tk()
 root.wm_title("Embedding in Tk")
 root.configure(background='black')
 
-ui_grid = UIGrid(root, 3, ['imu','memory', 'bat_and_line', 'range_array', 'cpu'])
+top_frame = tkinter.Frame(root)
+top_frame.pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+top_frame['bg'] = 'black'
+def _quit():
+    print('quitting')
+    bmbclient.stop()
+    print('bmb link shut down')
+    root.quit()     # stops mainloop
+    root.destroy()  # this is necessary on Windows to prevent
+                    # Fatal Python Error: PyEval_RestoreThread: NULL tstate
+    time.sleep(0.5)
+    print('exiting')
+    os._exit(0)
+
+def connect():
+    global connect_entry
+    print('connect', connect_entry.get())
+    bmbclient = BMBLinkClient(ip, port, record=True)
+
+connect_frame = tkinter.Frame(top_frame)
+connect_frame.pack(side=tkinter.LEFT, expand=1)
+
+connect_entry = tkinter.Entry(connect_frame, width=20)
+connect_entry.pack(side=tkinter.LEFT, expand=1)
+
+connect_button = tkinter.Button(master=connect_frame, text="Connect", command=connect)
+connect_button.pack(side=tkinter.LEFT, expand=1)
+
+quit_button = tkinter.Button(master=top_frame, text="Quit", command=_quit)
+quit_button.pack(side=tkinter.LEFT, expand=1)
+
+bottom_frame = tkinter.Frame(root)
+bottom_frame.pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+bottom_frame['bg'] = 'black'
+
+ui_grid = UIGrid(bottom_frame, 2, ['imu', 'bat_and_line', 'thermo_cam', 'cpu'])
 
 # sensor_frame = tkinter.Frame(root)
 
@@ -146,9 +161,9 @@ def on_key_press(event):
     global motion_speeds
     print(event.keysym)
     if event.keysym == 'Up':
-        motion_speeds['forward_speed'] += 25
+        motion_speeds['forward_speed'] += 20
     if event.keysym == 'Down':
-        motion_speeds['forward_speed'] -= 25
+        motion_speeds['forward_speed'] -= 20
     if event.keysym == 'Left':
         motion_speeds['yaw_rate'] += 0.3
     if event.keysym == 'Right':
@@ -158,7 +173,7 @@ def on_key_press(event):
     send_motion_message()
 
     outgoing_queue.put({'topic': 'tunetalk', 
-                        'message': event.keysym, 
+                        'message': event.keysym[0], 
                         'source': 'telemetry'})
 
     if event.keysym == 'space':

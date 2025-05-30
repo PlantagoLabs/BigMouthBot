@@ -15,7 +15,6 @@ class RangeArrayDriver:
     def __init__(self, i2c):
         self.tof = VL53L5CXMP(i2c, lpn=None)
         self.tof.reset()
-
         if not self.tof.is_alive():
             raise ValueError("VL53L5CX not detected")
 
@@ -29,7 +28,6 @@ class RangeArrayDriver:
         self.tof.sharpener_percent = 20
 
         self.tof.start_ranging({DATA_DISTANCE_MM, DATA_TARGET_STATUS})
-
         self.sampler_task = asyncio.create_task(self._sample_sensor_task())
 
     @profiler.profile("range_array.read")
@@ -67,10 +65,9 @@ class RangeArrayDriver:
                     # for n in range(4):
                         # array_line.append(distance[7 - n + 56 - 8*k])
                     distance_array.append(array_line)
-
                 synapse.publish('range_array', distance_array, 'range_array')
                 await asyncio.sleep_ms(int(1000./self.sampling_freq) - 100)
-            await asyncio.sleep_ms(10)
+            await asyncio.sleep_ms(20)
 
     def _reorder_8x8_array(self, distances):
         new_array = []

@@ -139,16 +139,18 @@ class StackedLinePlotter(AbstractFigurePlotter):
             self.data['timestamps'].pop(0)
 
 class GridPlotter(AbstractFigurePlotter):
-    def __init__(self, tk_master, c_lim = None):
+    def __init__(self, tk_master, c_lim = None, cmap='viridis_r'):
         AbstractFigurePlotter.__init__(self, tk_master, 6, 6)
         self.c_lim = c_lim
+        self.cmap = cmap
         self.subplt.grid(linestyle=':')
         self.data = {}
 
     def draw(self):
         if self.data:
             if 'img' not in self.data:
-                self.data['img'] = self.subplt.imshow(np.flip(self.data['array']), cmap='viridis_r')
+                self.data['img'] = self.subplt.imshow(np.flip(self.data['array']), cmap=self.cmap)
+                self.fig.colorbar(self.data['img'])
                 if self.c_lim:
                     self.data['img'].set_clim(self.c_lim)
             else:

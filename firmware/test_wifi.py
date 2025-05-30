@@ -1,19 +1,21 @@
 
 import asyncio
 import json
+import network
 from BMBLib import synapse
 from BMBLib.bmbnet import BMBLink
 from BMBLib import setup
 
-# print(wlan.isconnected())
-# ip = wlan.ifconfig()
-# print(ip)
-# print(wlan.status())
-# # new_ip = ('192.168.221.123', ip[1], ip[2], ip[3])
-# # print(new_ip)
-# # wlan.ifconfig(new_ip)
-# print(wlan.isconnected())
-# print(wlan.status())
+wlan = network.WLAN()
+print(wlan.isconnected())
+ip = wlan.ifconfig()
+print(ip)
+print(wlan.status())
+# new_ip = ('192.168.221.123', ip[1], ip[2], ip[3])
+# print(new_ip)
+# wlan.ifconfig(new_ip)
+print(wlan.isconnected())
+print(wlan.status())
 
 link_manager = BMBLink()
 initial_data = {'topic': 'welcome', 
@@ -32,6 +34,7 @@ synapse.subscribe("imu", link_manager.send_synaptic_mssage)
 synapse.subscribe("estimate.position", link_manager.send_synaptic_mssage)
 synapse.subscribe("encoder.speed", link_manager.send_synaptic_mssage)
 synapse.subscribe("control", link_manager.send_synaptic_mssage)
+synapse.subscribe("thermo_cam", link_manager.send_synaptic_mssage)
 
 async def main_loop():
     while 1:

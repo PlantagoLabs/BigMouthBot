@@ -1,6 +1,7 @@
 from queue import Queue
 from threading import Lock, Thread
 import time
+from sys import getrefcount
 
 class MultiQueue:
     def __init__(self):
@@ -29,8 +30,11 @@ class MultiQueue:
                         for k, output_queue_pair in enumerate(self.queues):
                             if n != k:
                                 output_queue_pair[1].put(message)
-
+            self.__cleanup()
             time.sleep(0.001)
+
+    def __cleanup(self):
+        self.queues = [q for q in self.queues if getrefcount(q[0]) > 2 or getrefcount(q[1]) > 2 ]
 
 multiqueue = MultiQueue()
 

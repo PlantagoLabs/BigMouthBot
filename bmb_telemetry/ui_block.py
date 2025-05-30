@@ -28,8 +28,12 @@ class UIGrid:
             return BatAndLineBlock(self.tk_master)
         elif block_name == 'range_array':
             return RangeArrayBlock(self.tk_master) 
+        elif block_name == 'thermo_cam':
+            return ThermoCamBlock(self.tk_master) 
         elif block_name == 'cpu':
-            return CPUBlock(self.tk_master)       
+            return CPUBlock(self.tk_master)     
+        elif block_name == 'trajectory':
+            return TrajectoryBlock(self.tk_master)  
         
     def update_blocks_with_messages(self, messages):
         for block in self.ui_blocks:
@@ -141,11 +145,21 @@ class TrajectoryBlock(AbstractUIBlock):
     def __init__(self, tk_master):
         super().__init__()
 
+        self.trajectory_plotter = graph_plotters.TrajectoryPlotter(tk_master)
+        self.trajectory_plotter.draw()
+
     def process_messages(self, messages):
-        print('not implemented')
+        redraw = False
+        for data in messages:
+            if data['topic'] == 'estimate.position':
+                self.trajectory_plotter.add_data(data['message'])
+                redraw = True
+
+        if redraw:
+            self.trajectory_plotter.draw()
 
     def get_main_tk_frame(self):
-        pass
+        return self.trajectory_plotter.get_tk_widget()
 
 class EncoderBlock(AbstractUIBlock):
     def __init__(self, tk_master):
@@ -176,6 +190,27 @@ class RangeArrayBlock(AbstractUIBlock):
 
     def get_main_tk_frame(self):
         return self.range_array_img.get_tk_widget()
+    
+class ThermoCamBlock(AbstractUIBlock):
+    def __init__(self, tk_master):
+        super().__init__()
+
+        self.thermo_cam_img = graph_plotters.GridPlotter(tk_master, c_lim=[0, 60], cmap='plasma')
+        self.thermo_cam_img.draw()
+
+    def process_messages(self, messages):
+        redraw = False
+        for data in messages:
+            if data['topic'] == 'thermo_cam':
+                print('got thermo cam data')
+                self.thermo_cam_img.add_data(data['message'])
+                redraw = True
+
+        if redraw:
+            self.thermo_cam_img.draw()
+
+    def get_main_tk_frame(self):
+        return self.thermo_cam_img.get_tk_widget()
 
 class CPUBlock(AbstractUIBlock):
     def __init__(self, tk_master):
