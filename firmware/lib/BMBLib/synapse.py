@@ -16,7 +16,9 @@ def publish(topic, message, source = None):
 
 async def _survey_task(topic, msg_function, period_ms, source):
     while 1:
-        publish(topic, msg_function(), source)
+        data = msg_function()
+        if data is not None:
+            publish(topic, data, source)
         await asyncio.sleep_ms(period_ms)
 
 def survey(topic, msg_function, period_ms, source = None):

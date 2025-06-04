@@ -5,7 +5,7 @@ from vl53l5cx.mp import VL53L5CXMP
 
 from vl53l5cx import DATA_TARGET_STATUS, DATA_DISTANCE_MM
 from vl53l5cx import STATUS_VALID, RESOLUTION_8X8
-from vl53l5cx import RANGING_MODE_CONTINUOUS
+from vl53l5cx import RANGING_MODE_CONTINUOUS, RANGING_MODE_AUTONOMOUS 
 
 from BMBLib import synapse
 from BMBLib import profiler
@@ -21,11 +21,11 @@ class RangeArrayDriver:
         self.tof.init()
         self.tof.resolution = RESOLUTION_8X8
 
-        self.sampling_freq = 10
+        self.sampling_freq = 20
 
         self.tof.ranging_freq = self.sampling_freq
-        self.tof.ranging_mode = RANGING_MODE_CONTINUOUS
-        self.tof.sharpener_percent = 20
+        self.tof.ranging_mode = RANGING_MODE_CONTINUOUS 
+        self.tof.sharpener_percent = 5
 
         self.tof.start_ranging({DATA_DISTANCE_MM, DATA_TARGET_STATUS})
         self.sampler_task = asyncio.create_task(self._sample_sensor_task())
@@ -49,25 +49,33 @@ class RangeArrayDriver:
                     if stat != STATUS_VALID:
                         distance[i] = None
 
-                distance_array = []
-                for k in range(8):
+                distance_array = [] #[distance[i:i+8] for i in range(0, 64, 8)]
+                for n in [6, 7, 4, 5, 2, 3, 0, 1]:
                     array_line = []
-                    array_line.append(distance[3 + 56 - 8*k])
-                    array_line.append(distance[2 + 56 - 8*k])
-                    array_line.append(distance[1 + 56 - 8*k])
-                    array_line.append(distance[0 + 56 - 8*k])
-                    array_line.append(distance[7 + 56 - 8*k])
-                    array_line.append(distance[6 + 56 - 8*k])
-                    array_line.append(distance[5 + 56 - 8*k])
-                    array_line.append(distance[4 + 56 - 8*k])
-                    # for n in range(4):
-                        # array_line.append(distance[3 - n + 56 - 8*k])
-                    # for n in range(4):
-                        # array_line.append(distance[7 - n + 56 - 8*k])
+                    array_line.append(distance[n + 56])
+                    array_line.append(distance[n + 48])
+                    array_line.append(distance[n + 40])
+                    array_line.append(distance[n + 32])
+                    array_line.append(distance[n + 24])
+                    array_line.append(distance[n + 16])
+                    array_line.append(distance[n + 8])
+                    array_line.append(distance[n])
+                        # array_line.append(distance[1 + 56 - 8*k])
+                        # array_line.append(distance[0 + 56 - 8*k])
+                        # array_line.append(distance[3 + 56 - 8*k])
+                        # array_line.append(distance[2 + 56 - 8*k])
+                        # array_line.append(distance[5 + 56 - 8*k])
+                        # array_line.append(distance[4 + 56 - 8*k])
+                        # array_line.append(distance[7 + 56 - 8*k])
+                        # array_line.append(distance[6 + 56 - 8*k])
+                #     # for n in range(4):
+                #         # array_line.append(distance[3 - n + 56 - 8*k])
+                #     # for n in range(4):
+                #         # array_line.append(distance[7 - n + 56 - 8*k])
                     distance_array.append(array_line)
                 synapse.publish('range_array', distance_array, 'range_array')
-                await asyncio.sleep_ms(int(1000./self.sampling_freq) - 100)
-            await asyncio.sleep_ms(20)
+                # await asyncio.sleep_ms(int(1000./self.sampling_freq) - 200)
+            await asyncio.sleep_ms(2)
 
     def _reorder_8x8_array(self, distances):
         new_array = []

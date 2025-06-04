@@ -30,11 +30,13 @@ synapse.subscribe("r_reflect", link_manager.send_synaptic_mssage)
 synapse.subscribe("range_array", link_manager.send_synaptic_mssage)
 synapse.subscribe("cpu_profile", link_manager.send_synaptic_mssage)
 synapse.subscribe("memory", link_manager.send_synaptic_mssage)
-synapse.subscribe("imu", link_manager.send_synaptic_mssage)
+# synapse.subscribe("imu", link_manager.send_synaptic_mssage)
 synapse.subscribe("estimate.position", link_manager.send_synaptic_mssage)
-synapse.subscribe("encoder.speed", link_manager.send_synaptic_mssage)
-synapse.subscribe("control", link_manager.send_synaptic_mssage)
+# synapse.subscribe("encoder.speed", link_manager.send_synaptic_mssage)
+# synapse.subscribe("control", link_manager.send_synaptic_mssage)
 synapse.subscribe("thermo_cam", link_manager.send_synaptic_mssage)
+synapse.subscribe("ultrasound.distance", link_manager.send_synaptic_mssage)
+
 
 async def main_loop():
     while 1:

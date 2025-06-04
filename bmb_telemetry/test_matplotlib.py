@@ -27,9 +27,9 @@ plt.style.use('dark_background')
 
 app_running = True
 
-ip = '192.168.68.107'
+# ip = '192.168.68.107'
 # ip = '192.168.21.110'
-# ip = '192.168.231.99'
+ip = '192.168.231.99'
 port = 2132
 
 print('before bmb client')
@@ -79,7 +79,7 @@ bottom_frame = tkinter.Frame(root)
 bottom_frame.pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
 bottom_frame['bg'] = 'black'
 
-ui_grid = UIGrid(bottom_frame, 2, ['imu', 'bat_and_line', 'thermo_cam', 'cpu'])
+ui_grid = UIGrid(bottom_frame, 2, ['range_array', 'thermo_cam', 'cpu', 'memory'])
 
 # sensor_frame = tkinter.Frame(root)
 
@@ -172,9 +172,9 @@ def on_key_press(event):
         motion_speeds = {'forward_speed': 0, 'yaw_rate': 0}
     send_motion_message()
 
-    outgoing_queue.put({'topic': 'tunetalk', 
-                        'message': event.keysym[0], 
-                        'source': 'telemetry'})
+    # outgoing_queue.put({'topic': 'tunetalk', 
+    #                     'message': event.keysym[0], 
+    #                     'source': 'telemetry'})
 
     if event.keysym == 'space':
         send_stop_message()

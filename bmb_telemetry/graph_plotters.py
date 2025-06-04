@@ -149,7 +149,7 @@ class GridPlotter(AbstractFigurePlotter):
     def draw(self):
         if self.data:
             if 'img' not in self.data:
-                self.data['img'] = self.subplt.imshow(np.flip(self.data['array']), cmap=self.cmap)
+                self.data['img'] = self.subplt.imshow(np.flip(self.data['array']), cmap=self.cmap, origin='lower')
                 self.fig.colorbar(self.data['img'])
                 if self.c_lim:
                     self.data['img'].set_clim(self.c_lim)

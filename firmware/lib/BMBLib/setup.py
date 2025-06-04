@@ -8,7 +8,7 @@ def make_buzz(freq, volume, duration, i2c, addr=52):
     msg = freq.to_bytes(2, 'big') + volume.to_bytes(1, 'big') + duration.to_bytes(2, 'big') + b'\x01'
     i2c.writeto_mem(addr, 3, msg)
 
-make_buzz(262, 4, 200, i2c)
+make_buzz(262, 3, 200, i2c)
 
 import json
 import gc
@@ -37,10 +37,14 @@ from LSM6DSO import LSM6DSO
 
 from AMG8833 import AMG8833
 
+from APDS9960 import APDS9960LITE
+
+from BMBLib.ultrasound_range import UltrasoundRange
+
 import network
 from BMBLib.bmbnet import BMBLink
 
-make_buzz(330, 4, 200, i2c)
+make_buzz(330, 3, 200, i2c)
 
 battery = BatteryMonitor()
 
@@ -70,12 +74,24 @@ except:
     make_buzz(131, 4, 1000, i2c)
     time.sleep(1)
 
-make_buzz(349, 4, 200, i2c)
+try:
+    apds9960=APDS9960LITE(i2c)      # Enable sensor
+    apds9960.prox.enableSensor()    # Enable Proximit sensing
+    apds9960.prox.eProximityGain = 3
+    apds9960.prox.eLEDBoost = 0
+except:
+    print('Issue with the mouth sensor')
+    make_buzz(131, 4, 1000, i2c)
+    time.sleep(1)
+
+make_buzz(349, 3, 200, i2c)
 time.sleep_ms(200)
     
 buzzer = AsyncI2CBuzzer(i2c, addr=52)
 
 servo_1 = Servo.get_default_servo(1)
+
+ultrasound = UltrasoundRange()
 
 position_estimation = SimplePositionEstimator()
 
@@ -102,6 +118,11 @@ def get_thermo_cam_data():
     global thermo_cam
     return thermo_cam.read_grid()
 
+@profiler.profile("mouth.prox.read")
+def get_mouth_prox_data():
+    global apds9960
+    return apds9960.prox.proximityLevel
+
 synapse.survey("v_batt", battery.get_battery_voltage, 500, "synaptic")
 synapse.survey("l_reflect", reflectance.get_left_reflectance, 200, "synaptic")
 synapse.survey("r_reflect", reflectance.get_right_reflectance, 200, "synaptic")
@@ -109,13 +130,15 @@ synapse.survey("cpu_profile", profiler.get_profiler_data, 1000, "synaptic")
 synapse.survey("memory", get_memory_status, 1000, "synaptic")
 synapse.survey("imu", get_imu_data, 40, "synaptic")
 synapse.survey("thermo_cam", get_thermo_cam_data, 100, "synaptic")
+synapse.survey("ultrasound.distance", ultrasound.distance, 10, "synaptic")
+synapse.survey("mouth.prox", get_mouth_prox_data, 100, "synaptic")
 
 synapse.apply("mouth.angle", servo_1.set_angle)
 synapse.apply("mouth.free", servo_1.free)
 
 synapse.apply("tunetalk", tunetalk)
 
-make_buzz(392, 4, 200, i2c)
+make_buzz(392, 3, 200, i2c)
 
 wlan = network.WLAN()
 wlan.active(True)
@@ -149,4 +172,4 @@ for point in wifi_points:
 # synapse.subscribe("encoder.speed", link_manager.send_synaptic_mssage)
 # synapse.subscribe("control", link_manager.send_synaptic_mssage)
 
-make_buzz(440, 4, 200, i2c)
+make_buzz(440, 3, 200, i2c)

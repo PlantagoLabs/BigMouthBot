@@ -55,8 +55,8 @@ class AMG8833:
         return 8x8 grid of INTEGER Values (no calculation) of real temperature
         """
         bin_data = list(self._i2c.readfrom_mem(self._addr, 0x80, 128)) # linear data 128 byte
-        float = [self.raw_to_celcius(256*hi + lo) for lo,hi in zip(bin_data[::2],bin_data[1::2])] # linear data 64 Integer
-        return [float[i:i+8] for i in range(0, 64, 8)] # 8x8 data structure
+        float_val = [self.raw_to_celcius(256*hi + lo) for lo,hi in zip(bin_data[::2],bin_data[1::2])] # linear data 64 Integer
+        return [list(reversed(float_val[i:i+8])) for i in range(0, 64, 8)] # 8x8 data structure
 
 
     def print8x8(self, data8x8):
