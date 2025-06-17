@@ -1,4 +1,5 @@
 from machine import I2C, Pin
+import time
 import asyncio
 
 from vl53l5cx.mp import VL53L5CXMP
@@ -12,7 +13,7 @@ from BMBLib import profiler
 
 class RangeArrayDriver:
 
-    def __init__(self, i2c):
+    def __init__(self, i2c, sampling_freq=20, sharpener_percent=5):
         self.tof = VL53L5CXMP(i2c, lpn=None)
         self.tof.reset()
         if not self.tof.is_alive():
@@ -21,11 +22,11 @@ class RangeArrayDriver:
         self.tof.init()
         self.tof.resolution = RESOLUTION_8X8
 
-        self.sampling_freq = 20
+        self.sampling_freq = sampling_freq
 
         self.tof.ranging_freq = self.sampling_freq
         self.tof.ranging_mode = RANGING_MODE_CONTINUOUS 
-        self.tof.sharpener_percent = 5
+        self.tof.sharpener_percent = sharpener_percent
 
         self.tof.start_ranging({DATA_DISTANCE_MM, DATA_TARGET_STATUS})
         self.sampler_task = asyncio.create_task(self._sample_sensor_task())
@@ -41,6 +42,7 @@ class RangeArrayDriver:
     async def _sample_sensor_task(self):
         while 1:
             if self._check_sensor():
+                t0 = time.ticks_ms()
                 results = self._read_sensor()
                 distance = results.distance_mm
                 status = results.target_status
@@ -73,8 +75,9 @@ class RangeArrayDriver:
                 #     # for n in range(4):
                 #         # array_line.append(distance[7 - n + 56 - 8*k])
                     distance_array.append(array_line)
+                ellapsed = time.ticks_diff(time.ticks_ms(), t0)
                 synapse.publish('range_array', distance_array, 'range_array')
-                # await asyncio.sleep_ms(int(1000./self.sampling_freq) - 200)
+                await asyncio.sleep_ms(int(1000./self.sampling_freq) - ellapsed)
             await asyncio.sleep_ms(2)
 
     def _reorder_8x8_array(self, distances):

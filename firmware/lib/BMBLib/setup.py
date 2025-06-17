@@ -14,6 +14,7 @@ import json
 import gc
 import os
 import time
+import asyncio
 
 # from BMBLib.encoder import Encoder
 # from BMBLib.motor import Motor
@@ -95,6 +96,8 @@ ultrasound = UltrasoundRange()
 
 position_estimation = SimplePositionEstimator()
 
+imu.calibrate_gyro_bias(num_samples = 100)
+
 @profiler.profile("memory.status")
 def get_memory_status():
     gc.collect() #collect now to have an accurate amount of what is actually in use
@@ -130,7 +133,7 @@ synapse.survey("cpu_profile", profiler.get_profiler_data, 1000, "synaptic")
 synapse.survey("memory", get_memory_status, 1000, "synaptic")
 synapse.survey("imu", get_imu_data, 40, "synaptic")
 synapse.survey("thermo_cam", get_thermo_cam_data, 100, "synaptic")
-synapse.survey("ultrasound.distance", ultrasound.distance, 10, "synaptic")
+synapse.survey("ultrasound.distance", ultrasound.distance, 50, "synaptic")
 synapse.survey("mouth.prox", get_mouth_prox_data, 100, "synaptic")
 
 synapse.apply("mouth.angle", servo_1.set_angle)
@@ -154,22 +157,33 @@ for point in wifi_points:
         print(f'connecting to {point_name}')
         break
 
-# link_manager = BMBLink()
-# initial_data = {'topic': 'welcome', 
-#                 'source': 'connection',
-#                 'message': "You are connected :)"}
-# link_manager.on_connection_msg = json.dumps(initial_data) + '\n'
+print(wlan.isconnected())
+ip = wlan.ifconfig()
+print(ip)
+print(wlan.status())
+print(wlan.isconnected())
+print(wlan.status())
 
-# synapse.subscribe("v_batt", link_manager.send_synaptic_mssage)
-# synapse.subscribe("l_reflect", link_manager.send_synaptic_mssage)
-# synapse.subscribe("r_reflect", link_manager.send_synaptic_mssage)
-# synapse.subscribe("range_array", link_manager.send_synaptic_mssage)
-# synapse.subscribe("thermo_cam", link_manager.send_synaptic_mssage)
-# synapse.subscribe("cpu_profile", link_manager.send_synaptic_mssage)
-# synapse.subscribe("memory", link_manager.send_synaptic_mssage)
-# synapse.subscribe("imu", link_manager.send_synaptic_mssage)
-# synapse.subscribe("estimate.position", link_manager.send_synaptic_mssage)
+link_manager = BMBLink()
+initial_data = {'topic': 'welcome', 
+                'source': 'connection',
+                'message': "You are connected :)"}
+link_manager.on_connection_msg = json.dumps(initial_data) + '\n'
+
+
+synapse.subscribe("v_batt", link_manager.send_synaptic_mssage)
+synapse.subscribe("l_reflect", link_manager.send_synaptic_mssage)
+synapse.subscribe("r_reflect", link_manager.send_synaptic_mssage)
+synapse.subscribe("range_array", link_manager.send_synaptic_mssage)
+synapse.subscribe("cpu_profile", link_manager.send_synaptic_mssage)
+synapse.subscribe("memory", link_manager.send_synaptic_mssage)
+synapse.subscribe("imu", link_manager.send_synaptic_mssage)
+synapse.subscribe("estimate.position", link_manager.send_synaptic_mssage)
 # synapse.subscribe("encoder.speed", link_manager.send_synaptic_mssage)
 # synapse.subscribe("control", link_manager.send_synaptic_mssage)
+synapse.subscribe("thermo_cam", link_manager.send_synaptic_mssage)
+synapse.subscribe("ultrasound.distance", link_manager.send_synaptic_mssage)
+        
+server = asyncio.run(asyncio.start_server(link_manager.handle_connection, ip[0], 2132))
 
 make_buzz(440, 3, 200, i2c)

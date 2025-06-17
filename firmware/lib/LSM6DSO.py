@@ -5,6 +5,8 @@
 # v1.0 2019.7
 # Modified by PlantagoLabs
 
+import time
+
 LSM6DSO_CTRL1_XL = const(0x10)
 LSM6DSO_CTRL2_G = const(0x11)
 LSM6DSO_CTRL3_C = const(0x12)
@@ -47,6 +49,21 @@ class LSM6DSO():
         self._scale_g_c = 2
         self.scale_a('2g')
         self.scale_g('500')
+        self.gyro_bias = [0.0, 0.0, 0.0]
+    
+    def calibrate_gyro_bias(self, num_samples = 30, time_interval = 40):
+        time.sleep_ms(time_interval)
+        gyro_bias = [0.0, 0.0, 0.0]
+        for i in range(num_samples):
+            gyro_data = self.get_g()
+            for j in range(3):
+                gyro_bias[j] += gyro_data[j]/num_samples
+            time.sleep_ms(time_interval)
+
+        for j in range(3):
+            self.gyro_bias[j] = gyro_bias[j]
+
+        print(self.gyro_bias)
 
     def int16(self, d):
         return d if d < 0x8000 else d - 0x10000
@@ -105,13 +122,13 @@ class LSM6DSO():
         return self.mg(LSM6DSO_OUTZ_L_A)
 
     def gx(self):
-        return self.radps(LSM6DSO_OUTX_L_G)
+        return self.radps(LSM6DSO_OUTX_L_G) - self.gyro_bias[0]
 
     def gy(self):
-        return self.radps(LSM6DSO_OUTY_L_G)
+        return self.radps(LSM6DSO_OUTY_L_G) - self.gyro_bias[1]
 
     def gz(self):
-        return self.radps(LSM6DSO_OUTZ_L_G)
+        return self.radps(LSM6DSO_OUTZ_L_G) - self.gyro_bias[2]
 
     def get_a(self):
         self.irq_v[0][0] = self.ax()

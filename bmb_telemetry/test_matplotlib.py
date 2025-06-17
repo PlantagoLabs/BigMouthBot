@@ -27,9 +27,9 @@ plt.style.use('dark_background')
 
 app_running = True
 
-# ip = '192.168.68.107'
+ip = '192.168.68.107'
 # ip = '192.168.21.110'
-ip = '192.168.231.99'
+# ip = '192.168.231.99'
 port = 2132
 
 print('before bmb client')
@@ -79,7 +79,7 @@ bottom_frame = tkinter.Frame(root)
 bottom_frame.pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
 bottom_frame['bg'] = 'black'
 
-ui_grid = UIGrid(bottom_frame, 2, ['range_array', 'thermo_cam', 'cpu', 'memory'])
+ui_grid = UIGrid(bottom_frame, 2, ['range_array', 'thermo_cam', 'cpu', 'imu'])
 
 # sensor_frame = tkinter.Frame(root)
 
