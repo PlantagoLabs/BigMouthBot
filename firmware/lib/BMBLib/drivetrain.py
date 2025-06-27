@@ -34,7 +34,6 @@ class Drivetrain():
     def set_velocity(self, forward_speed, yaw_rate):
         w_r = (forward_speed + 0.5*yaw_rate*self.wheel_distance)/self.wheel_circumference
         w_l = (forward_speed - 0.5*yaw_rate*self.wheel_distance)/self.wheel_circumference
-        print(forward_speed, w_r, w_l)
 
         self.r_controller.set_target(w_r)
         self.l_controller.set_target(w_l)

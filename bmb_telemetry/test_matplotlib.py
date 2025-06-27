@@ -27,9 +27,9 @@ plt.style.use('dark_background')
 
 app_running = True
 
-ip = '192.168.68.107'
+# ip = '192.168.68.107'
 # ip = '192.168.21.110'
-# ip = '192.168.231.99'
+ip = '192.168.231.99'
 port = 2132
 
 print('before bmb client')

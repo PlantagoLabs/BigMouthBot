@@ -101,7 +101,7 @@ imu.calibrate_gyro_bias(num_samples = 100)
 @profiler.profile("memory.status")
 def get_memory_status():
     gc.collect() #collect now to have an accurate amount of what is actually in use
-    storage_stats = os.statvfs('/')
+    storage_stats = os.statvfs('/') # use a lib like https://github.com/ifurusato/brushless-motor-controller/blob/main/upy/free.py
     memory = {'ram': {'allocated': gc.mem_alloc(), 'free': gc.mem_free()}, 
               'storage': {'allocated': storage_stats[2] - storage_stats[3], 'free': storage_stats[3]}}
     return memory

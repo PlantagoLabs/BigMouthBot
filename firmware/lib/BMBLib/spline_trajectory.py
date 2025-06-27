@@ -73,6 +73,8 @@ class CompoundTrajectory:
 
         self.subtrajectories.append(PenticSplineTrajectory(next_point, next_vel, current_acc, points[-1], final_vel, [0, 0], 
                                                            spline_start_ticks_ms, total_time_interval))
+        
+        self.stop_ticks_ms = time.ticks_add(spline_start_ticks_ms, round(total_time_interval*1000))
         self.points.append(points[-1])
 
     def get_position(self, ticks_ms):
@@ -96,6 +98,9 @@ class CompoundTrajectory:
                 return sub.get_states(ticks_ms)
             
         return self.subtrajectories[-1].get_states(ticks_ms)
+    
+    def is_ticks_in_range(self, ticks_ms):
+        return (time.ticks_diff(ticks_ms, self.start_ticks_ms) > 0) and (time.ticks_diff(ticks_ms, self.stop_ticks_ms) < 0)
 
     def _distance_between_points(self, p1, p2):
         return ulinalg.norm(ulinalg.diff_vector(p1, p2))
