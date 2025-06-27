@@ -9,7 +9,7 @@ time.sleep(0.05)
 if user_button.value():
     try:
         from BMBLib import setup
-        import test_error_catch
+        import test_behaviors
     except Exception as e: 
         sys.print_exception(e)
         with open('traceback.txt', 'w') as fid:
