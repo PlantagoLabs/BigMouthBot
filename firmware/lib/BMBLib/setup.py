@@ -8,7 +8,16 @@ def make_buzz(freq, volume, duration, i2c, addr=52):
     msg = freq.to_bytes(2, 'big') + volume.to_bytes(1, 'big') + duration.to_bytes(2, 'big') + b'\x01'
     i2c.writeto_mem(addr, 3, msg)
 
-make_buzz(262, 3, 200, i2c)
+DEFAULT_VOLUME = 4
+
+make_buzz(262, DEFAULT_VOLUME, 200, i2c)
+
+from BMBLib import synapse
+
+def print_logs(topic, message, source):
+    print(f'{source}: {message}')
+
+synapse.subscribe('log', print_logs)
 
 import json
 import gc
@@ -29,12 +38,13 @@ from BMBLib.range_array_driver import RangeArrayDriver
 
 from BMBLib.position_estimation import SimplePositionEstimator
 
-from BMBLib import synapse
 from BMBLib import profiler
 
+import async_buzzer
+async_buzzer.DEFAULT_VOLUME = DEFAULT_VOLUME
 from async_buzzer import AsyncI2CBuzzer, tabs_to_notes, text_to_tunetalk_tabs
 
-from LSM6DSO import LSM6DSO
+from BMBLib.imu import LSM6DSOIMU
 
 from AMG8833 import AMG8833
 
@@ -45,7 +55,7 @@ from BMBLib.ultrasound_range import UltrasoundRange
 import network
 from BMBLib.bmbnet import BMBLink
 
-make_buzz(330, 3, 200, i2c)
+make_buzz(330, DEFAULT_VOLUME, 200, i2c)
 
 battery = BatteryMonitor()
 
@@ -55,7 +65,7 @@ with open('motor_model.json', 'r') as fid:
 drivetrain = Drivetrain(motor_models, battery.get_battery_voltage)
 
 try:
-    imu = LSM6DSO(i2c)
+    imu = LSM6DSOIMU(i2c, 40)
 except:
     print('Issue with the IMU')
     make_buzz(131, 4, 1000, i2c)
@@ -85,7 +95,7 @@ except:
     make_buzz(131, 4, 1000, i2c)
     time.sleep(1)
 
-make_buzz(349, 3, 200, i2c)
+make_buzz(349, DEFAULT_VOLUME, 200, i2c)
 time.sleep_ms(200)
     
 buzzer = AsyncI2CBuzzer(i2c, addr=52)
@@ -96,8 +106,6 @@ ultrasound = UltrasoundRange()
 
 position_estimation = SimplePositionEstimator()
 
-imu.calibrate_gyro_bias(num_samples = 100)
-
 @profiler.profile("memory.status")
 def get_memory_status():
     gc.collect() #collect now to have an accurate amount of what is actually in use
@@ -105,11 +113,6 @@ def get_memory_status():
     memory = {'ram': {'allocated': gc.mem_alloc(), 'free': gc.mem_free()}, 
               'storage': {'allocated': storage_stats[2] - storage_stats[3], 'free': storage_stats[3]}}
     return memory
-
-@profiler.profile("imu.read")
-def get_imu_data():
-    global imu
-    return imu.get_dict()
 
 @profiler.profile("tunetalk")
 def tunetalk(message):
@@ -119,7 +122,8 @@ def tunetalk(message):
 @profiler.profile("thermo_cam.read")
 def get_thermo_cam_data():
     global thermo_cam
-    return thermo_cam.read_grid()
+    themo_data = thermo_cam.read_grid()
+    return themo_data
 
 @profiler.profile("mouth.prox.read")
 def get_mouth_prox_data():
@@ -131,7 +135,6 @@ synapse.survey("l_reflect", reflectance.get_left_reflectance, 200, "synaptic")
 synapse.survey("r_reflect", reflectance.get_right_reflectance, 200, "synaptic")
 synapse.survey("cpu_profile", profiler.get_profiler_data, 1000, "synaptic")
 synapse.survey("memory", get_memory_status, 1000, "synaptic")
-synapse.survey("imu", get_imu_data, 40, "synaptic")
 synapse.survey("thermo_cam", get_thermo_cam_data, 100, "synaptic")
 synapse.survey("ultrasound.distance", ultrasound.distance, 50, "synaptic")
 synapse.survey("mouth.prox", get_mouth_prox_data, 100, "synaptic")
@@ -141,7 +144,7 @@ synapse.apply("mouth.free", servo_1.free)
 
 synapse.apply("tunetalk", tunetalk)
 
-make_buzz(392, 3, 200, i2c)
+make_buzz(392, DEFAULT_VOLUME, 200, i2c)
 
 wlan = network.WLAN()
 wlan.active(True)
@@ -183,7 +186,10 @@ synapse.subscribe("estimate.position", link_manager.send_synaptic_mssage)
 # synapse.subscribe("control", link_manager.send_synaptic_mssage)
 synapse.subscribe("thermo_cam", link_manager.send_synaptic_mssage)
 synapse.subscribe("ultrasound.distance", link_manager.send_synaptic_mssage)
+synapse.subscribe("log", link_manager.send_synaptic_mssage)
         
 server = asyncio.run(asyncio.start_server(link_manager.handle_connection, ip[0], 2132))
 
-make_buzz(440, 3, 200, i2c)
+profiler.reset()
+
+make_buzz(440, DEFAULT_VOLUME, 200, i2c)

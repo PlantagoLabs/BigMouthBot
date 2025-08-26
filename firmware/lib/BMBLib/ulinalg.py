@@ -36,3 +36,6 @@ def scale_vector(v, scale):
     for i in range(len(v)):
         scales_vect.append(v[i]*scale)
     return scales_vect
+
+def heading(v):
+    return math.atan2(v[1], v[0])

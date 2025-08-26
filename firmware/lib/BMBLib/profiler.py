@@ -3,6 +3,9 @@ import time
 
 profiler_data = {'profiles': {}, 'start_time': time.time()}
 
+def reset():
+    profiler_data = {'profiles': {}, 'start_time': time.time()}
+
 def profile(tag):
     global profiler_data
     profiler_data['profiles'].setdefault(tag, {'calls': 0, 'time': 0.0})

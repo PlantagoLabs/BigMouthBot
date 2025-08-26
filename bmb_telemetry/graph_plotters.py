@@ -187,3 +187,4 @@ class PiePlotter(AbstractFigurePlotter):
 
     def add_data(self, data):
         self.data = data
+

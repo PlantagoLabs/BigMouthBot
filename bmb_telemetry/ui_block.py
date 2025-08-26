@@ -1,4 +1,5 @@
 import tkinter
+from tkinter.scrolledtext import ScrolledText
 from abc import ABC, abstractmethod
 
 import graph_plotters
@@ -34,6 +35,8 @@ class UIGrid:
             return CPUBlock(self.tk_master)     
         elif block_name == 'trajectory':
             return TrajectoryBlock(self.tk_master)  
+        elif block_name == 'log':
+            return LogBox(self.tk_master)  
         
     def update_blocks_with_messages(self, messages):
         for block in self.ui_blocks:
@@ -243,3 +246,18 @@ class CPUBlock(AbstractUIBlock):
 
     def get_main_tk_frame(self):
         return self.cpu_usage_img.get_tk_widget()
+    
+class LogBox(AbstractUIBlock):
+    def __init__(self, tk_master, topics_to_log = ('log',)):
+        super().__init__()
+        self.text_frame = ScrolledText(master=tk_master, width=60,  height=24)
+        self.data = ""
+        self.topics_to_log = topics_to_log
+
+    def process_messages(self, messages):
+        for message in messages:
+            if message['topic'] in self.topics_to_log:
+                self.text_frame.insert('end', '\n' + str(message['message']))
+
+    def get_main_tk_frame(self):
+        return self.text_frame

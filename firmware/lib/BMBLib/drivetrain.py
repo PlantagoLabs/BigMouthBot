@@ -1,8 +1,9 @@
 from BMBLib.encoder import Encoder
 from BMBLib.motor import Motor
-from BMBLib.control import BasicControl
+from BMBLib.control import PIDTimerControl
 
 from BMBLib import synapse
+import asyncio
 
 class Drivetrain():
     def __init__(self, motor_models, voltage_func=None):
@@ -15,15 +16,17 @@ class Drivetrain():
         self.r_encoder = Encoder(1, 12, 13)
         self.r_motor = Motor(14, 15, motor_model=motor_models['motor_models']['right'],  voltage_func=voltage_func)
 
-        self.l_controller = BasicControl(self.l_encoder.get_wheel_speed, self.l_motor.set_speed)
+        self.l_controller = PIDTimerControl(self.l_encoder.get_wheel_speed, self.l_motor.set_speed)
         self.l_controller.force_command(0)
         self.l_controller.set_proportional_gain(motor_models['control_gains']['Kp'])
         self.l_controller.set_integrator_gain(motor_models['control_gains']['Ki'], 12.)
 
-        self.r_controller = BasicControl(self.r_encoder.get_wheel_speed, self.r_motor.set_speed)
+        self.r_controller = PIDTimerControl(self.r_encoder.get_wheel_speed, self.r_motor.set_speed)
         self.r_controller.force_command(0)
         self.r_controller.set_proportional_gain(motor_models['control_gains']['Kp'])
         self.r_controller.set_integrator_gain(motor_models['control_gains']['Ki'], 12.)
+
+        self.stopped = True
 
         synapse.subscribe('drivetrain.stop', self._act_stop_message)
         synapse.subscribe('drivetrain.set_velocity', self._act_velocity_message)
@@ -32,6 +35,8 @@ class Drivetrain():
         synapse.survey("control", self.get_control_data, 100, "drivetrain")
 
     def set_velocity(self, forward_speed, yaw_rate):
+        self.stopped = False
+        synapse.publish('drivetrain.stopped', self.stopped, 'drivetrain')
         w_r = (forward_speed + 0.5*yaw_rate*self.wheel_distance)/self.wheel_circumference
         w_l = (forward_speed - 0.5*yaw_rate*self.wheel_distance)/self.wheel_circumference
 
@@ -39,6 +44,9 @@ class Drivetrain():
         self.l_controller.set_target(w_l)
 
     def stop(self):
+        if not self.stopped:
+            asyncio.create_task(self._send_delayed_stopped_message())
+        self.stopped = True
         self.r_controller.force_command(0)
         self.l_controller.force_command(0)
 
@@ -69,4 +77,8 @@ class Drivetrain():
 
     def _act_velocity_message(self, topic, message, source):
         self.set_velocity(message['forward_speed'], message['yaw_rate'])
+
+    async def _send_delayed_stopped_message(self):
+        await asyncio.sleep_ms(100)
+        synapse.publish('drivetrain.stopped', self.stopped, 'drivetrain')
 

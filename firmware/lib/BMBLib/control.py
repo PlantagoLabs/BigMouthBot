@@ -1,6 +1,8 @@
 from machine import Timer
+from BMBLib import ulinalg
+import math
 
-class BasicControl:
+class PIDTimerControl:
     def __init__(self, measure_func, command_func, freq:int=50):
         self.Kp = None
         self.Ki = None
@@ -79,5 +81,38 @@ class BasicControl:
 
         self.prev_error = err
         
+class GoToPointControl:
+    def __init__(self, speed_gain, speed_range, angle_gain, angle_max_speed):
+        
+        self.speed_gain = speed_gain
+        self.speed_range = speed_range
+        self.angle_gain = angle_gain
+        self.angle_max_speed = angle_max_speed
     
-    
+    def start(self, start_state, target):
+        self.target = target
+        self.initial_goal_vector = ulinalg.diff_vector(self.target, [start_state['x'], start_state['y']])
+
+    def update(self, current_state):
+        current_position = [current_state['x'], current_state['y']]
+        vector_to_goal = ulinalg.diff_vector(self.target, current_position)
+        if ulinalg.dot(vector_to_goal, self.initial_goal_vector) < 0:
+            return None
+
+        goal_heading = ulinalg.heading(vector_to_goal)
+        diff_heading = goal_heading - current_state['heading']
+        while diff_heading > math.pi:
+            diff_heading -= 2*math.pi
+        while diff_heading < -math.pi:
+            diff_heading += 2*math.pi
+
+        angle_speed_factor = max(math.cos(diff_heading), 0)
+        target_speed = angle_speed_factor*min(self.speed_gain*ulinalg.norm(vector_to_goal) + self.speed_range[0], self.speed_range[1])
+        angle_speed = self.angle_gain*diff_heading
+        if angle_speed > self.angle_max_speed:
+            angle_speed = self.angle_max_speed
+        elif angle_speed < -self.angle_max_speed:
+            angle_speed = -self.angle_max_speed
+
+        return {'forward_speed': target_speed, 'yaw_rate': angle_speed}
+

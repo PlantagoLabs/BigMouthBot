@@ -5,7 +5,7 @@ Some functions use a default volume that can be changed using the global variabl
 
 import asyncio
 
-DEFAULT_VOLUME = 4
+DEFAULT_VOLUME = 3
 
 class AsyncI2CBuzzer:
     """Reads a playlist of notes and plays them timely on Sparkfun's Qwiic Buzzer using asyncio
