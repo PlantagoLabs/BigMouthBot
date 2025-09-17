@@ -1,6 +1,52 @@
 import math
 from BMBLib import ulinalg
 import time
+import synapse
+
+class SplineFollower:
+    def __init__(self):
+        self.trajectory = None
+        synapse.apply("estimate.pose", self._follow_trajectory)
+        synapse.apply("spline_follower.set", self.set_new_trajectory)
+        synapse.apply("spline_follower.stop", self.stop)
+
+    def _follow_trajectory(self, message):
+        if self.trajectory is None:
+            return
+
+        now_ticks = time.ticks_ms()
+        if not self.trajectory.is_ticks_in_range(now_ticks):
+            self.stop()
+            return
+
+        target = self.trajectory.get_states(now_ticks)
+        
+        d = ulinalg.diff_vector([target[:2]], [message[:2]])
+        v_s = [target[3], target[4]]
+        v_p = [-target[4], target[3]]
+
+        e_f = ulinalg.dot(d, v_s)/ulinalg.norm(v_s)
+        e_l = ulinalg.dot(d, v_p)/ulinalg.norm(v_p)
+
+        d_heading = target[2] - message['heading']
+        while d_heading > math.pi:
+            d_heading -= 2*math.pi
+        while d_heading < -math.pi:
+            d_heading += 2*math.pi
+
+        v_c = ulinalg.norm(v_s) + 10.0*math.atan(0.3*e_f)
+        yaw_rate_c = target[5] + 0.1*d_heading + 0.03*math.atan(0.2*e_l)
+
+        synapse.publish('drivetrain.set_velocity', {'forward_speed': v_c, 'yaw_rate': yaw_rate_c}, 'trajectory')
+
+    def set_new_trajectory(self, new_trajectory):
+        self.trajectory = new_trajectory
+
+    def stop(self):
+        self.trajectory = None
+        synapse.publish('drivetrain.stop', None, 'trajectory')
+        synapse.publish('spline_follower.ended', None, 'trajectory')
+
 
 class CompoundTrajectory:
     def __init__(self, inward_point_scale = 0.0 ,extra_leap_distance = 0.01):

@@ -58,7 +58,10 @@ class Drivetrain():
         return encoder_data
     
     def get_encoder_speeds(self):
-        encoder_data = {'left': self.l_encoder.get_wheel_speed(), 'right': self.r_encoder.get_wheel_speed()}
+        l_encoder = self.l_encoder.get_wheel_speed()
+        r_encoder = self.r_encoder.get_wheel_speed()
+        encoder_data = {'speed': self.wheel_circumference*(l_encoder + r_encoder)/2,
+                        'yaw_rate': self.wheel_circumference*(r_encoder - l_encoder)/self.wheel_distance}
         return encoder_data
     
     def get_control_data(self):

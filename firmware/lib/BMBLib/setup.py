@@ -1,4 +1,5 @@
 from machine import I2C, Pin
+from BMBLib.config import config
 
 i2c = I2C(1, scl=Pin(19), sda= Pin(18), freq=400_000, timeout=200000)
 
@@ -8,7 +9,7 @@ def make_buzz(freq, volume, duration, i2c, addr=52):
     msg = freq.to_bytes(2, 'big') + volume.to_bytes(1, 'big') + duration.to_bytes(2, 'big') + b'\x01'
     i2c.writeto_mem(addr, 3, msg)
 
-DEFAULT_VOLUME = 4
+DEFAULT_VOLUME = 3
 
 make_buzz(262, DEFAULT_VOLUME, 200, i2c)
 
@@ -64,12 +65,15 @@ with open('motor_model.json', 'r') as fid:
 
 drivetrain = Drivetrain(motor_models, battery.get_battery_voltage)
 
-try:
-    imu = LSM6DSOIMU(i2c, 40)
-except:
-    print('Issue with the IMU')
-    make_buzz(131, 4, 1000, i2c)
-    time.sleep(1)
+if config['imu']['enable']:
+    try:
+        imu = LSM6DSOIMU(i2c, 40)
+    except:
+        print('Issue with the IMU')
+        make_buzz(131, 4, 1000, i2c)
+        time.sleep(1)
+
+position_estimation = SimplePositionEstimator(use_imu = config['imu']['enable'])
 
 try:
     range_array = RangeArrayDriver(i2c)
@@ -103,8 +107,6 @@ buzzer = AsyncI2CBuzzer(i2c, addr=52)
 servo_1 = Servo.get_default_servo(1)
 
 ultrasound = UltrasoundRange()
-
-position_estimation = SimplePositionEstimator()
 
 @profiler.profile("memory.status")
 def get_memory_status():
@@ -181,7 +183,7 @@ synapse.subscribe("range_array", link_manager.send_synaptic_mssage)
 synapse.subscribe("cpu_profile", link_manager.send_synaptic_mssage)
 synapse.subscribe("memory", link_manager.send_synaptic_mssage)
 synapse.subscribe("imu", link_manager.send_synaptic_mssage)
-synapse.subscribe("estimate.position", link_manager.send_synaptic_mssage)
+synapse.subscribe("estimate.pose", link_manager.send_synaptic_mssage)
 # synapse.subscribe("encoder.speed", link_manager.send_synaptic_mssage)
 # synapse.subscribe("control", link_manager.send_synaptic_mssage)
 synapse.subscribe("thermo_cam", link_manager.send_synaptic_mssage)

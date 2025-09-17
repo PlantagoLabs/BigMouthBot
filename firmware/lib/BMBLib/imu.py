@@ -32,7 +32,6 @@ class LSM6DSOIMU:
                 filter_coef = 1.0/self.num_calibration
                 for k in range(3):
                     self.gyro_calibration[k] = (1-filter_coef)*self.gyro_calibration[k] + filter_coef*data['gyro'][k]
-                print('gyro calibration', self.num_calibration, self.gyro_calibration)
 
             for k in range(3):
                 data['gyro'][k] -= self.gyro_calibration[k]

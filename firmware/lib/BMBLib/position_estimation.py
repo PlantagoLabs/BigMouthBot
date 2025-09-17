@@ -5,7 +5,7 @@ from BMBLib import synapse
 from BMBLib import profiler
 
 class SimplePositionEstimator:
-    def __init__(self):
+    def __init__(self, use_imu = True):
         self.x = 0.0
         self.y = 0.0
         self.heading = 0.0
@@ -16,12 +16,17 @@ class SimplePositionEstimator:
         self.gyro_z_bias = None
         self.gyro_z_buffer = []
 
+        self.use_imu = use_imu
+
         synapse.apply('encoder.motion', self.update_position_with_encoders)
         synapse.apply('imu', self._do_update_position_with_imu)
 
     @profiler.profile("estimator.encoders")
     def _do_update_position_with_encoders(self, motion):
         d_forward = motion['forward'] - self.previous_forward
+
+        if not self.use_imu:
+            self.heading = motion['heading']
 
         self.x += d_forward*math.cos(self.heading)
         self.y += d_forward*math.sin(self.heading)
@@ -30,6 +35,8 @@ class SimplePositionEstimator:
 
     @profiler.profile("estimator.imu")
     def _do_update_position_with_imu(self, imu):
+        if not self.use_imu:
+            return
         new_time_tick = time.ticks_us()
         dtick = time.ticks_diff(new_time_tick, self.imu_previous_time_tick)
 
@@ -41,7 +48,7 @@ class SimplePositionEstimator:
     def update_position_with_encoders(self, motion):
         self._do_update_position_with_encoders(motion)
 
-        synapse.publish('estimate.position', {'x': self.x, 'y': self.y, 'heading': self.heading}, 'simple_estimator')
+        synapse.publish('estimate.pose', [self.x, self.y, self.heading], 'simple_estimator')
 
 
 

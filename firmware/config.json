@@ -1,0 +1,29 @@
+{
+    "motor_model": {
+        "control_gains": {"Kp": 0.3, "Ki": 0.1}, 
+        "motor_models": {
+            "left": [[0.8613729, -1.004551], [0.8743118, 0.9327465]], 
+            "right": [[0.8656891, -1.042451], [0.9097151, 0.9809957]]}
+    },
+    "body": {
+        "width": 200,
+        "length": 200
+    },
+    "navigation": {
+        "trajectory": {
+            "forward_error_gain": 0.3,
+            "forward_error_max_speed": 10,
+            "lateral_error_gain": 0.2,
+            "lateral_error_max_speed": 10,
+            "heading_error_gain": 0.1
+        },
+        "obstacles": {
+
+        }
+    },
+    "imu": {
+        "enable": true
+    }
+
+    
+}

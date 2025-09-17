@@ -55,7 +55,7 @@ def put_value_in_cache_factory(key, value):
 
 def save_position_factory(position_name):
     def save_base_position():
-        synapse.memorize('behaviors.'+position_name, synapse.recall_message('estimate.position'), 'behavior')
+        synapse.memorize('behaviors.'+position_name, synapse.recall_message('estimate.pose'), 'behavior')
     return save_base_position
 
 def set_next_target_position():
@@ -123,17 +123,17 @@ eat_jar_behavior_list = [behaviors.CallFunctionOnceBehavior('add_scan_position',
                                                   save_position_factory('scan_position'),
                                                    'move_to_next_position' )]
 
-task_list = [behaviors.MultiBehavior('init', init_behavior_list, 'initial_wait', []),
-             behaviors.MultiBehavior('move_to_next_position', move_to_next_position_behavior_list, 'set_new_target_position', []),
-             behaviors.MultiBehavior('scan', scan_behavior_list, 'scan_rotate', []),
-            behaviors.MultiBehavior('got_shaken', 
+task_list = [behaviors.MetaBehavior('init', init_behavior_list, 'initial_wait', []),
+             behaviors.MetaBehavior('move_to_next_position', move_to_next_position_behavior_list, 'set_new_target_position', []),
+             behaviors.MetaBehavior('scan', scan_behavior_list, 'scan_rotate', []),
+            behaviors.MetaBehavior('got_shaken', 
                                      [behaviors.StopBehavior('stop_shaken', 'say_aie'),
                                         behaviors.SendMessageBehavior('say_aie', ('tunetalk', 'aie', 'behaviors'), 'shaken_wait'),
                                      behaviors.WaitBehavior('shaken_wait', 500, 'init')], 'stop_shaken', [])]
 
 trigger_list = [behaviors.EarthQuakeTrigger('shake_trigger', 'got_shaken')]
 
-player = behaviors.Player(behaviors.MultiBehavior('complete_tasks', task_list, 'init', trigger_list))
+player = behaviors.Player(behaviors.MetaBehavior('complete_tasks', task_list, 'init', trigger_list))
 
 
 
