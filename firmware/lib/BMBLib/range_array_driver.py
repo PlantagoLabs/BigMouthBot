@@ -13,7 +13,7 @@ from BMBLib import profiler
 
 class RangeArrayDriver:
 
-    def __init__(self, i2c, sampling_freq=20, sharpener_percent=5):
+    def __init__(self, i2c, sampling_freq=10, sharpener_percent=5):
         self.tof = VL53L5CXMP(i2c, lpn=None)
         self.tof.reset()
         if not self.tof.is_alive():

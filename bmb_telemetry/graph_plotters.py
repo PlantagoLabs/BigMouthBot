@@ -100,8 +100,9 @@ class TrajectoryPlotter(AbstractFigurePlotter):
 
 
     def add_data(self, position):
-        self.data['x'].append(position['x'])
-        self.data['y'].append(position['y'])
+        print(position)
+        self.data['x'].append(position[0])
+        self.data['y'].append(position[1])
 
 class StackedLinePlotter(AbstractFigurePlotter):
     def __init__(self, tk_master, max_num_samples = 60., y_lim = None, y_label=None):

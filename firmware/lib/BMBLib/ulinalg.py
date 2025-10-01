@@ -16,6 +16,10 @@ def cosine_sq(a, b):
     dot_a_b = dot(a, b)
     return (dot_a_b*dot_a_b)/(norm_sq(a)*norm_sq(b))
 
+def cosine_2d_sq(a, b):
+    dot_a_b = (a[0]*b[0] + a[1]*b[1])
+    return ( dot_a_b*dot_a_b )/((a[0]*a[0] + a[1]*a[1])*(b[0]*b[0] + b[1]*b[1]))
+
 def cosine(a, b):
     return dot(a, b)/(norm(a)*norm(b))
 

@@ -59,3 +59,20 @@ def forget(topic):
     channel = _get_channel(topic)
     channel['persisted'] = None
 
+class SwitchLink():
+    def __init__(self, topic_in, topic_out, enable_topic, start_enable = True):
+        subscribe(topic_in, self._link)
+        apply(enable_topic, self.enable)
+        self.topic_out = topic_out
+        self.enable = start_enable
+
+    def _link(self, topic, message, source):
+        if self.enable:
+            publish(self.topic_out, message, source)
+
+    def enable(self, message):
+        self.enable = message
+        
+        
+        
+

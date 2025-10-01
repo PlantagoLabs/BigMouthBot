@@ -154,7 +154,7 @@ class TrajectoryBlock(AbstractUIBlock):
     def process_messages(self, messages):
         redraw = False
         for data in messages:
-            if data['topic'] == 'estimate.position':
+            if data['topic'] == 'estimate.pose':
                 self.trajectory_plotter.add_data(data['message'])
                 redraw = True
 

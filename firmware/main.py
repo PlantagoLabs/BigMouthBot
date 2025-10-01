@@ -1,3 +1,5 @@
+import micropython
+
 from machine import Pin
 import sys
 import time
@@ -9,7 +11,7 @@ time.sleep(0.05)
 if user_button.value():
     try:
         from BMBLib import setup
-        import test_fields
+        import test_obstacle_map
     except Exception as e: 
         sys.print_exception(e)
         with open('traceback.txt', 'w') as fid:

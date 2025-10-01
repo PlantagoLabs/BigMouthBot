@@ -145,6 +145,22 @@ class WaitBehavior(AbstractBehavior):
         else:
             return None
         
+class WaitForMessageBehavior(AbstractBehavior):
+    def __init__(self, name, topic, next_behavior_name, erase_after_reception = False):
+        self.name = name
+        self.topic = topic
+        self.next_behavior_name = next_behavior_name
+        self.erase_after_reception = erase_after_reception
+
+    def play(self):
+        if synapse.recall_message(self.topic) is not None:
+            return self.next_behavior_name
+        return None
+    
+    def stop(self):
+        if self.erase_after_reception:
+            synapse.forget(self.topic)
+        
 class ExitBehavior(AbstractBehavior):
     def __init__(self, name):
         self.name = name
