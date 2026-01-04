@@ -136,6 +136,17 @@ class YeetField:
         self.yeet_urge += 0.1
 
         return yeet_vector, 0.5*(1+math.sin(self.yeet_urge))*self.field_priority
+    
+class InertiaField:
+    def __init__(self, field_priority):
+        self.field_priority = field_priority
+        self.yeet_urge = 0
+
+    def get_value(self):
+        heading = synapse.recall_message('estimate.pose')[2]
+        forward_vector = [math.cos(heading), math.sin(heading)]
+
+        return forward_vector, self.field_priority
 
 class ObstaclesField:
     def __init__(self, obstacles_topic, active_range, safety_margin, field_priority, repulsive = True):
@@ -154,7 +165,7 @@ class ObstaclesField:
         robot_position = synapse.recall_message('estimate.pose')[:2]
         
         for obstacle in synapse.recall_message(self.obstacles_topic):
-            distance_vect = ulinalg.diff_vector(obstacle['position'], robot_position)
+            distance_vect = ulinalg.diff_vector(obstacle, robot_position)
             distance = ulinalg.norm(distance_vect)
             if distance < 1e-6:
                 distance = 1e-6
@@ -166,14 +177,11 @@ class ObstaclesField:
                 direction = -1
             total_velocity = ulinalg.add_vector(total_velocity, ulinalg.scale_vector(distance_vect, weight*direction/distance))
             max_weight = max(max_weight, weight)
-            print(obstacle, robot_position, distance, weight, total_weight, total_velocity)
 
         if total_weight > 1e-6:
             total_velocity = ulinalg.scale_vector(total_velocity, 1/total_weight)
         else:
             total_velocity = [0, 0]
-
-        print(total_velocity, self.field_priority*max_weight)
 
         return total_velocity, self.field_priority*max_weight
 

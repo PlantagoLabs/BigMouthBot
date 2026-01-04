@@ -7,6 +7,7 @@ _running = False
 _done = False
 _tasks = []
 _lock = _thread.allocate_lock()
+_error_msg = None
 
 def add_task(input_topic, method, output_topic, to_recall):
     global _running
@@ -21,6 +22,7 @@ def _run_tasks():
     global _running
     global _done
     global _tasks
+    global _error_msg
     while _running:
         for task in _tasks:
             input = None
@@ -28,7 +30,11 @@ def _run_tasks():
                 if task['input'] is not None and task['output'] is None:
                     input = task['input']
             if input:
-                output = task['method'](*input)
+                try:
+                    output = task['method'](*input)
+                except Exception as e:
+                    with _lock:
+                        _error_msg = f'Error {str(e)} for input {task['input']} and output {task['output']}'
             with _lock:
                 if task['output_topic'] and output:
                     task['output'] = output
@@ -45,12 +51,16 @@ def _receive_data(topic, message, source):
 
 async def _send_data():
     global _tasks
+    global _error_msg
     while True:
         for task in _tasks:
             with _lock:
                 if task['output'] is not None:
                     synapse.publish(task['output_topic'], task['output'], 'sidecore')
                     task['output'] = None
+
+        if _error_msg:
+            synapse.publish('log', _error_msg, 'sidecore')
         await asyncio.sleep_ms(30)
 
 def start():
@@ -64,6 +74,7 @@ def start():
 def stop_and_join():
     global _running
     global _done
+    _done = False
     _running = False
     while not _done:
         time.sleep_ms(10)

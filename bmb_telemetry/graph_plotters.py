@@ -100,7 +100,6 @@ class TrajectoryPlotter(AbstractFigurePlotter):
 
 
     def add_data(self, position):
-        print(position)
         self.data['x'].append(position[0])
         self.data['y'].append(position[1])
 
@@ -166,8 +165,7 @@ class GridPlotter(AbstractFigurePlotter):
         try:
             self.data['array'] = np.array(data, dtype=float)
         except:
-            print("error in array data")
-            print(data)
+            print("error in array data", data)
 
 class PiePlotter(AbstractFigurePlotter):
     def __init__(self, tk_master):

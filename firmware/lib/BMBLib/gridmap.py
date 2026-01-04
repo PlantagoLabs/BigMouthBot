@@ -16,6 +16,9 @@ class GridMap:
         
         return self._data[coord[1]*self.shape[0] + coord[0]]
     
+    def get_cell_fast(self, coord_x, coord_y):
+        return self._data[coord_y*self.shape[0] + coord_x]
+    
     def __setitem__(self, coord, value):
         self._data[coord[1]*self.shape[0] + coord[0]] = value
 
@@ -36,6 +39,9 @@ class GridMap:
 
     def is_coordinate_on_grid(self, coord):
         return coord[0] >= 0 and coord[1] >= 0 and coord[0] < self.shape[0] and coord[1] < self.shape[1]
+    
+    def is_coordinate_pair_on_grid(self, coord_x, coord_y):
+        return coord_x >= 0 and coord_y >= 0 and coord_x < self.shape[0] and coord_y < self.shape[1]
     
     def get_square_area_coords(self, center, size):
         coords_in_square = []

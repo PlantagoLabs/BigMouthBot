@@ -66,6 +66,91 @@ class ObstacleMap:
             self.sensed_map[cell] = self.sensed_map[cell]>>1
             self.occupancy_map[cell] = self.occupancy_map[cell]>>1
 
+    def is_cell_obstacle(self, x, y):
+        return self.sensed_map.get_cell_fast(x, y) > 5 and (10*self.occupancy_map.get_cell_fast(x, y))//self.sensed_map.get_cell_fast(x, y) > 3
+    
+    def is_cell_sensed(self, x, y):
+        return self.sensed_map.get_cell_fast(x, y) > 5
+
+    def obstacle_scan(self, position, max_dist = 15, obstacles_only = False, finish_early = False):
+        obstacles = []
+        unsensed = []
+
+        cell = self.occupancy_map.world_to_grid(position)
+        cell_to_world_func = self.occupancy_map.grid_to_world
+        is_coordinate_pair_on_grid = self.occupancy_map.is_coordinate_pair_on_grid
+
+        pos_x = cell[0]
+        pos_y = cell[1]
+        i_dir = 0
+        k_dir = 0
+        cell_x = 0
+        cell_y = 0
+
+        for x_main_axis, direction in [(1, 1), (0, 1), (1, -1), (0, -1)]:
+
+            left_ray_obstacle = None
+            right_ray_obstacle = None
+            left_ray_unsensed = None
+            right_ray_unsensed = None
+            done = False
+
+            for i in range(2, max_dist):
+                i_dir = direction*i
+                for k in range(0,i):
+                    k_dir = direction*k
+                    if x_main_axis:
+                        cell_y = pos_y + k_dir
+                        cell_x = pos_x + i_dir
+                    else:
+                        cell_y = pos_y + i_dir
+                        cell_x = pos_x  + k_dir
+                        
+
+                    if is_coordinate_pair_on_grid(cell_x, cell_y):
+                        if right_ray_obstacle is None and self.is_cell_obstacle(cell_x, cell_y):
+                            right_ray_obstacle = (cell_x, cell_y)
+                                
+                        if not obstacles_only and right_ray_unsensed is None and not self.is_cell_sensed(cell_x, cell_y) :
+                            if x_main_axis and self.is_cell_sensed( cell_x - direction, cell_y ):
+                                right_ray_unsensed = (cell_x, cell_y)
+                            elif not x_main_axis and self.is_cell_sensed( cell_x, cell_y - direction ):
+                                right_ray_unsensed = (cell_x, cell_y)
+                        
+                    if x_main_axis:
+                        cell_y = pos_y - k_dir
+                    else:
+                        cell_x = pos_x - k_dir
+
+                    if is_coordinate_pair_on_grid(cell_x, cell_y):
+                        if left_ray_obstacle is None and self.is_cell_obstacle(cell_x, cell_y):
+                            left_ray_obstacle = (cell_x, cell_y)
+
+                        if not obstacles_only and left_ray_unsensed is None and not self.is_cell_sensed(cell_x, cell_y):
+                            if x_main_axis and self.is_cell_sensed( cell_x - direction, cell_y ):
+                                left_ray_unsensed = (cell_x, cell_y)
+                            elif not x_main_axis and self.is_cell_sensed( cell_x, cell_y - direction ):
+                                left_ray_unsensed = (cell_x, cell_y)
+
+                    if finish_early and left_ray_obstacle and right_ray_obstacle:
+                        done = True
+                        break
+
+                if done:
+                    break
+                    
+            if left_ray_obstacle is not None:
+                obstacles.append(cell_to_world_func(left_ray_obstacle))
+            if right_ray_obstacle is not None:
+                obstacles.append(cell_to_world_func(right_ray_obstacle))
+
+            if left_ray_unsensed is not None:
+                unsensed.append(cell_to_world_func(left_ray_unsensed))
+            if right_ray_unsensed is not None:
+                unsensed.append(cell_to_world_func(right_ray_unsensed))
+
+        return obstacles, unsensed
+
     def get_data_line(self, line_number):
         if line_number >= self.occupancy_map.shape[0]:
             return None

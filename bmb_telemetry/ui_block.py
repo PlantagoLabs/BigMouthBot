@@ -205,7 +205,6 @@ class ThermoCamBlock(AbstractUIBlock):
         redraw = False
         for data in messages:
             if data['topic'] == 'thermo_cam':
-                print('got thermo cam data')
                 self.thermo_cam_img.add_data(data['message'])
                 redraw = True
 
@@ -237,7 +236,6 @@ class CPUBlock(AbstractUIBlock):
                         profiles.setdefault('other', 0)
                         profiles['other'] += profile_time
                 profiles['idle'] = max(data['message']['runtime'] - total_time_usage, 0.1)
-                print(profiles)
                 self.cpu_usage_img.add_data(profiles)
                 redraw = True
 

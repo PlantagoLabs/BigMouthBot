@@ -25,6 +25,7 @@ class Player:
                 print('Done playing behavior')
                 break
             except Exception as e:
+                synapse.publish('log', str(e), 'behaviors.player')
                 raise e
             if returned_name is not None:
                 # print(f'switching to {new_behavior_name}')
@@ -61,8 +62,10 @@ class MetaBehavior(AbstractBehavior):
         self.log_switching = log_switching
 
     def start(self):
-        self.behaviors[self.starting_behavior_name].start()
+        for trigger in self.triggers:
+            trigger.reset()
         self.current_behavior_name = self.starting_behavior_name
+        self.behaviors[self.current_behavior_name].start()
 
     def play(self):
         new_behavior_name = None
@@ -93,7 +96,7 @@ class MultiBehavior(AbstractBehavior):
         for behavior in self.behaviors:
             behavior.start()
 
-    def start(self):
+    def play(self):
         for behavior in self.behaviors:
             behavior.play()
 
@@ -180,10 +183,9 @@ class StopBehavior(AbstractBehavior):
         return self.next_behavior_name
     
 class FollowFieldsBehavior(AbstractBehavior):
-    def __init__(self, name, fields, next_behavior_name, timeout_ms=-1):
+    def __init__(self, name, fields):
         self.name = name
         self.fields_proto = fields
-        self.next_behavior_name = next_behavior_name
 
     def start(self):
         if callable(self.fields_proto):
@@ -348,6 +350,9 @@ class RandomBehavior(AbstractBehavior):
 class AbstractTrigger:
     def __init__(self, name):
         self.name = name
+
+    def reset(self):
+        pass
         
     def check(self):
         """Returns a behavior name if trigger condition is met"""
@@ -355,7 +360,7 @@ class AbstractTrigger:
     
 class EarthQuakeTrigger(AbstractTrigger):
     def __init__(self, name, triggered_behavior_name):
-        self.name = name
+        super().__init__(name)
         self.triggered_behavior_name = triggered_behavior_name
         
     def check(self):
@@ -363,7 +368,6 @@ class EarthQuakeTrigger(AbstractTrigger):
             return self.triggered_behavior_name
         return None
     
-
 class ArrivedAtPositionTrigger(AbstractTrigger):
     """Trigger a behavior when estimate position is reached.
     
@@ -373,7 +377,7 @@ class ArrivedAtPositionTrigger(AbstractTrigger):
     - radius: radius of the target
     - triggered_behavior_name: name of triggered behavior"""
     def __init__(self, name, target_position, radius, triggered_behavior_name):
-        self.name = name
+        super().__init__(name)
         self.target_position = target_position
         self.radius = radius
         self.triggered_behavior_name = triggered_behavior_name
@@ -392,3 +396,27 @@ class ArrivedAtPositionTrigger(AbstractTrigger):
             return self.triggered_behavior_name
 
         return None
+    
+class TimeTrigger(AbstractTrigger):
+    def __init__(self, name, delay_ms, triggered_behavior_name, reset_topic = None):
+        super().__init__(name)
+        self.delay_ms = delay_ms
+        self.start_time = time.ticks_ms()
+        self.reset_topic = reset_topic
+        self.triggered_behavior_name = triggered_behavior_name
+        self.was_triggered = False
+
+    def reset(self):
+        self.start_time = time.ticks_ms()
+        self.was_triggered = False
+
+    def check(self):
+        if synapse.recall(self.reset_topic):
+            self.reset()
+
+        if not self.was_triggered and time.ticks_diff(time.ticks_ms(), self.start_time) > self.delay_ms:
+            self.was_triggered = True
+            return self.triggered_behavior_name
+
+        return None
+        

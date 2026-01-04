@@ -10,7 +10,7 @@ from BMBLib import behaviors
 from BMBLib import navigation_fields
 
 ### set up obstacle mapping on the second core
-obstacle_map = ObstacleMap([-3000, 3000, -3000, 3000], 100)
+obstacle_map = ObstacleMap([-2000, 4000, -3000, 3000], 100)
 # obstacle_map.set_enable_map(False)
 
 # test_grid = GridMap([20, 20], [-4000,  4000, -4000, 4000])
@@ -55,7 +55,7 @@ navigator = navigation_fields.DifferentialDriveFieldNavigator(20, 200, 0.5, 1)
 
 ### make behaviors
 
-navigate_list = [behaviors.FollowFieldsBehavior('navigate_field', make_fields, 'say_oups', 5000),
+navigate_list = [behaviors.FollowFieldsBehavior('navigate_field', make_fields),
             behaviors.SendMessageBehavior('say_oups', ('tunetalk', 'oups', 'behaviors'), 'talk_wait'),
             behaviors.WaitBehavior('talk_wait', 2000, 'end')]
 
@@ -65,7 +65,9 @@ behaviors_list = [behaviors.WaitBehavior('initial_wait', 500, 'scan_rotate'),
                   behaviors.SetVelocityBehavior('scan_rotate', 0, math.radians(45), 'scan_wait'),
                   behaviors.WaitBehavior('scan_wait', 8000, 'add_target_position'),
                 behaviors.CallFunctionOnceBehavior('add_target_position',
-                                                      set_target_from_list_factory([[500, 0], [1000, 0], [1500, 0], [2000, 0], [0, 0]],
+                                                      set_target_from_list_factory([[0, -1000], [0, -500], [500, 500], [1000, 0], 
+                                                                                    [2200, -300], [1500, 0], [2000, 0],
+                                                                                     [2800, 500], [2500, 0], [500, 0], [0, 0]],
                                                                                    'follow_field',
                                                                                    'end_stop'),
                                                       'choose_behavior'),
